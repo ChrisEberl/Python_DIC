@@ -15,7 +15,6 @@ from PySide.QtGui import *
 import fileList
 import dispVsPos
 import relativeNeighborsDialog
-import masksDialog
 import profile
 import masks
 import deleteImages
