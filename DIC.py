@@ -18,9 +18,9 @@ import time
 import multiprocessing
 from PySide.QtGui import *
 from PySide.QtCore import *
-import matplotlib
-matplotlib.use('Qt4Agg')
-matplotlib.rcParams['backend.qt4'] = 'PySide'
+from matplotlib import use, rcParams
+use('Qt4Agg')
+rcParams['backend.qt4'] = 'PySide'
 
 import startWidget
 import profile

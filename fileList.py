@@ -12,10 +12,10 @@ Current File: This file manages the open and create new analysis functions
 """
 
 import os
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
 from PySide.QtGui import *
 from PySide.QtCore import *
+from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
 import menubar
 import dockWidget
 import StrainAnalysis
@@ -25,15 +25,15 @@ import numpy as np
 
 
 def generateFileList(self): #called when a new analysis is started
-    
+
     self.devWindow.addInfo('New analysis request.') #only in DevMode
-    
-    
+
+
     self.filePathTest, _ = QFileDialog.getOpenFileName(self, 'Select first image', '', 'Image Files (*.tif *.tiff *.bmp *.jpg *.jpeg *.png)')
     if self.filePathTest == '':
         return
     else: #create the file list when an image is selected
-        
+
         menubar.menuDisabled(self)
         for instance in dockWidget.dockPlot.instances: #deleting dockwidget if there are
             instance.close()
@@ -48,7 +48,7 @@ def generateFileList(self): #called when a new analysis is started
         self.fileList = os.listdir(os.path.dirname(self.filePath))
         self.fileList = [nb for nb in self.fileList if nb.endswith(self.extension)]
         self.fileNameList = []
-        
+
         self.count = 0
         for element in self.fileList:
             self.fileNameList.append('{0}'.format(element))
@@ -56,60 +56,60 @@ def generateFileList(self): #called when a new analysis is started
 
         self.devWindow.addInfo('Filenamelist generated.') #only in DevMode
 
-        
+
         createAnalysis = nameAnalysis(self, self.fileNameList, os.path.dirname(self.filePath))
         result = createAnalysis.exec_()
-        
+
         if result == 1:
-        
+
             self.filterFile = None
-            
+
             #self.devWindow.addInfo('File saved in \''+self.directory+'\' folder.') #only in DevMode
-            
+
             menubar.menuCreateGridEnabled(self)
-            
+
             generateGrid.createGrid(self)
-    
-    
+
+
 def openFileList(self): #when opening a previous analysis, ask for the project folder and launch the analysis widget
-    
+
     self.devWindow.addInfo('Open file request.') #only in DevMode
-    
+
     self.flags = QFileDialog.DontResolveSymlinks | QFileDialog.ShowDirsOnly
     self.directory = QFileDialog.getExistingDirectory(self, 'Data Folder', '', self.flags)
-    
+
     if self.directory == "":
         return
     else:
-        
+
         for instance in dockWidget.dockPlot.instances: #deleting dockwidget if there are
             instance.close()
             instance.deleteLater()
         dockWidget.dockPlot.instances = []
-            
+
         self.filePath = os.path.dirname(self.directory)
         self.fileDataPath = self.directory
-        
+
         self.devWindow.addInfo('Starting analysis : '+os.path.basename(self.fileDataPath), self.statusBar())
 
         StrainAnalysis.analyseResult(self, self)
 
 class nameAnalysis(QDialog):
-    
+
     def __init__(self, parent, fileNameList, filePath):
-        
+
         QDialog.__init__(self)
         dialogLayout = QVBoxLayout()
         dialogLayout.setSpacing(20)
         self.setWindowTitle('Analysis Creation')
         self.setMaximumWidth(500)
         self.setMaximumHeight(600)
-        
+
         infoLbl = QLabel('Please verify the automatic image selection.')
         infoLbl.setAlignment(Qt.AlignCenter)
-        
+
         imageLayout = QHBoxLayout()
-        self.plotArea = MatplotlibImageWidget(self)
+        self.plotArea = MatplotlibImageWidget()
         self.plotArea.setMaximumHeight(300)
         self.imageList = QListView()
         self.imageList.setMinimumWidth(200)
@@ -126,7 +126,7 @@ class nameAnalysis(QDialog):
         self.imageList.clicked.connect(lambda: self.displayImage(filePath, fileNameList))
         imageLayout.addWidget(self.plotArea)
         imageLayout.addWidget(self.imageList)
-        
+
         imageNumberLayout = QHBoxLayout()
         imageLbl = QLabel('Selection:')
         self.imageSelected = QLabel('-')
@@ -136,7 +136,7 @@ class nameAnalysis(QDialog):
         imageNumberLayout.addWidget(self.imageSelected)
         imageNumberLayout.addWidget(totalImage)
         imageNumberLayout.addStretch(1)
-        
+
         analysisName = QHBoxLayout()
         analysisName.setSpacing(20)
         self.analysisLbl = QLabel('-')
@@ -155,7 +155,7 @@ class nameAnalysis(QDialog):
         analysisName.addWidget(self.analysisLbl)
         analysisName.addWidget(self.analysisInput)
         analysisName.addStretch(1)
-        
+
         buttonLayout = QHBoxLayout()
         buttonLayout.setSpacing(40)
         cancelButton = QPushButton('Cancel')
@@ -169,24 +169,24 @@ class nameAnalysis(QDialog):
         buttonLayout.addWidget(cancelButton)
         buttonLayout.addWidget(self.createButton)
         buttonLayout.addStretch(1)
-        
+
         self.analysisInput.textChanged.connect(lambda: self.textChanged(filePath, self.analysisInput.text()))
         self.createButton.clicked.connect(lambda: self.createAnalysis(parent, filePath, self.analysisInput.text()))
         cancelButton.clicked.connect(self.reject)
-        
+
         dialogLayout.addWidget(infoLbl)
         dialogLayout.addLayout(imageLayout)
         dialogLayout.addLayout(imageNumberLayout)
         dialogLayout.addLayout(analysisName)
         dialogLayout.addLayout(buttonLayout)
-        
+
         self.setLayout(dialogLayout)
         self.textChanged(filePath, '')
         self.displayImage(filePath, fileNameList)
-        
-        
+
+
     def displayImage(self, filePath, fileNameList):
-        
+
         self.plotArea.imagePlot.cla()
         imageName = self.imageModel.itemFromIndex(self.imageList.currentIndex()).text()
         readImage = cv2.imread(filePath+'/'+imageName,0)
@@ -205,9 +205,9 @@ class nameAnalysis(QDialog):
         else:
             self.imageSelected.setText('<font color=red>'+str(nbChecked)+'</font>')
             self.createButton.setEnabled(False)
-        
+
     def textChanged(self, filePath, name):
-        
+
         if name <> '':
             checkName = filePath+'/'+name
             if os.path.exists(checkName):
@@ -220,9 +220,9 @@ class nameAnalysis(QDialog):
         else:
             self.analysisLbl.setText('<font size=5>Analysis Name:</font>')
             self.createButton.setEnabled(False)
-            
+
     def createAnalysis(self, parent, filePath, name):
-        
+
         directory = filePath+'/'+name
         os.makedirs(directory)
         fileNameList = []
@@ -234,10 +234,10 @@ class nameAnalysis(QDialog):
         parent.fileDataPath = directory
         parent.statusBar().showMessage('Image list file created in '+directory)
         self.accept()
-            
-class MatplotlibImageWidget(FigureCanvas): 
-    
-    def __init__(self, parentWidget):
+
+class MatplotlibImageWidget(FigureCanvas):
+
+    def __init__(self):
         super(MatplotlibImageWidget,self).__init__(Figure())
         self.figure = Figure()
         self.figure.set_facecolor('none')
