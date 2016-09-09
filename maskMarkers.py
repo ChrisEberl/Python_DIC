@@ -14,8 +14,8 @@ Current File: This file manages mask marker feature dialog
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
-from PySide.QtCore import *
-from PySide.QtGui import *
+from PyQt4.QtCore import *
+from PyQt4.QtGui import *
 import numpy as np
 import cv2
 from matplotlib import patches
@@ -25,15 +25,15 @@ import progressWidget
 import copy
 
 class deleteMarkersDialog(QDialog):
-    
+
     def __init__(self, parent, currentImage): #create the layout of the window dialog
-        
+
         QDialog.__init__(self)
-        
+
         self.setWindowTitle('Mask markers')
         self.setMinimumWidth(500)
         dialogLayout = QVBoxLayout()
-        
+
         #init_Variables
         self.parent = parent
         self.fileDataPath = parent.parentWindow.fileDataPath
@@ -49,11 +49,11 @@ class deleteMarkersDialog(QDialog):
         self.data_y = parent.data_y
         self.disp_x = parent.disp_x
         self.disp_y = parent.disp_y
-        
+
         dialogLabel = QLabel('Select markers you want to mask.<br>A first click initiate the selection, a second click confirms the selection. (Type C to cancel)')
         dialogLabel.setAlignment(Qt.AlignHCenter)
         dialogLabel.setMinimumHeight(30)
-        
+
         checkBoxOptions = QHBoxLayout()
         checkBoxOptions.setAlignment(Qt.AlignHCenter)
         checkBoxOptions.setSpacing(10)
@@ -62,15 +62,15 @@ class deleteMarkersDialog(QDialog):
         self.dispMarkers = QCheckBox('Displacement Arrows')
         checkBoxOptions.addWidget(self.baseMarkers)
         checkBoxOptions.addWidget(self.dispMarkers)
-        
+
         #checkBox clicked
         self.baseMarkers.stateChanged.connect(lambda: self.selectMarkers())
         self.dispMarkers.stateChanged.connect(lambda: self.selectMarkers())
-        
+
         self.plotArea = matplotlibWidget()
         self.plotArea.canvas.setFocusPolicy(Qt.ClickFocus)
         self.plotArea.canvas.setFocus()
-        
+
         deleteButtonBox = QHBoxLayout()
         deleteButton = QPushButton('Delete Selection')
         deleteButton.setMinimumWidth(120)
@@ -81,46 +81,46 @@ class deleteMarkersDialog(QDialog):
         self.imageSelectSpinBox.valueChanged.connect(lambda: self.selectMarkers())
         self.allImagesCheckBox = QCheckBox('Apply on all images.')
         self.allImagesCheckBox.setChecked(True)
-        
+
         deleteButtonBox.addStretch(1)
         deleteButtonBox.addWidget(deleteButton)
         deleteButtonBox.addWidget(self.imageSelectSpinBox)
         deleteButtonBox.addWidget(self.allImagesCheckBox)
         deleteButtonBox.addStretch(1)
-        
+
         #Dialog Window Layout
         dialogLayout.addWidget(dialogLabel)
         dialogLayout.addLayout(checkBoxOptions)
         dialogLayout.addWidget(self.plotArea)
         dialogLayout.addLayout(deleteButtonBox)
-         
+
         self.setLayout(dialogLayout)
-        
-        
+
+
         #init Plot
         self.unselectedMarkersPlot = []
         self.selectedMarkersPlot = []
         self.arrowsPlot = []
         self.selectMarkers(firstStart=1)
-        
-        
+
+
     def selectMarkers(self, firstStart=0):
-        
-        
+
+
         self.firstClic = 0
         self.plotArea.canvas.mpl_connect('button_release_event', self.on_release)
         self.plotArea.canvas.mpl_connect('key_press_event', self.on_key)
-        
+
         value = self.activeImages[self.imageSelectSpinBox.value()-1]
         readImage = cv2.imread(self.filePath+'/'+self.filenamelist[value],0)
         readImage = filterWidget.applyFilterListToImage(self.filterList, readImage)
-            
+
         data_x_init = self.data_x[:, self.activeImages[0]]
         data_y_init = self.data_y[:, self.activeImages[0]]
         disp_x_init = self.disp_x[:, self.activeImages[value]]
         disp_y_init = self.disp_y[:, self.activeImages[value]]
         markerSelection = self.currentMask[:, value]
-        
+
         nbInstances = len(np.atleast_1d(self.activeInstances))
         for instance in range(nbInstances):
             #instanceMarkers = [marker for marker in self.gridInstances[self.activeInstances[instance]] if marker in self.activeMarkers[value]]
@@ -135,13 +135,13 @@ class deleteMarkersDialog(QDialog):
                 self.selectedMarkersPlot[instance].remove()
             except:
                 pass
-        
+
             if self.baseMarkers.isChecked():
                 try:
                     self.selectedMarkersPlot[instance] = self.plotArea.plot.plot(data_x_init[unSelectedMarkers], data_y_init[unSelectedMarkers], 'o', ms=5, color='green')[0]
                 except:
                     self.selectedMarkersPlot.append(self.plotArea.plot.plot(data_x_init[unSelectedMarkers], data_y_init[unSelectedMarkers], 'o', ms=3, color='green')[0])
-                     
+
             if self.dispMarkers.isChecked():
                 nb = 0
                 nbUnselected = len(np.atleast_1d(unSelectedMarkers))
@@ -163,7 +163,7 @@ class deleteMarkersDialog(QDialog):
                         element.remove()
                 except:
                     pass
-                
+
                 try:
                     self.unselectedMarkersPlot[instance] = self.plotArea.plot.plot(data_x_init[selectedMarkers], data_y_init[selectedMarkers], 'o', ms=5, color='red')[0]
                 except:
@@ -172,11 +172,11 @@ class deleteMarkersDialog(QDialog):
 
         self.imagePlot = self.plotArea.plot.imshow(readImage, cmap='gray')
         self.plotArea.canvas.draw_idle()
-        
+
         if firstStart == 1:
             self.plotArea.plot.cla()
             self.selectMarkers()
-        
+
     def on_motion(self,event): #allow a live drawing of the rectangle area
 
         x1 = event.xdata
@@ -194,7 +194,7 @@ class deleteMarkersDialog(QDialog):
         #self.rect.set_xy((self.x0, self.y0))
         self.rect.set_linestyle('dashed')
         self.plotArea.canvas.draw_idle()
-    
+
     def on_release(self, event):
         if self.plotArea.toolbar._active is None: #if toolbar is not active
             if self.firstClic == 0:
@@ -221,14 +221,14 @@ class deleteMarkersDialog(QDialog):
                     y1 = self.y2
                 self.selectRectangleMarkers(self.x0, self.y0, x1 - self.x0, y1 - self.y0)
                 self.rect.remove()
-                
+
     def on_key(self, event):
         #print('you pressed', event.key, event.xdata, event.ydata)
         isValidEvent = False
         if event.key == 'd':
             value = self.activeImages[self.imageSelectSpinBox.value()-1]
             markerSelection = self.currentMask[:, value]
-            
+
             nbInstances = len(np.atleast_1d(self.activeInstances))
             for instance in range(nbInstances):
                 #instanceMarkers = [marker for marker in self.gridInstances[self.activeInstances[instance]] if marker in self.activeMarkers[value]]
@@ -244,11 +244,11 @@ class deleteMarkersDialog(QDialog):
         if event.key == 'r':
             self.plotArea.plot.cla()
             isValidEvent = True
-        
+
         if isValidEvent is True:
             self.selectMarkers()
-            
-        
+
+
     def selectRectangleMarkers(self, x0, y0, width, height): #when an area is selected, select all the markers inside
 
         value = self.activeImages[self.imageSelectSpinBox.value()-1]
@@ -257,7 +257,7 @@ class deleteMarkersDialog(QDialog):
         markerSelection = self.currentMask[:, value]
         data_x_current = self.data_x[:, value]
         data_y_current = self.data_y[:, value]
-        
+
         nbInstances = len(np.atleast_1d(self.activeInstances))
         for instance in range(nbInstances):
             #instanceMarkers = [marker for marker in self.gridInstances[self.activeInstances[instance]] if marker in self.activeMarkers[value]]
@@ -274,51 +274,50 @@ class deleteMarkersDialog(QDialog):
                             self.currentMask[i, :] = 1
                         else:
                             self.currentMask[i, value] = 1
-                        
+
         self.selectMarkers() #refresh the canvas which selected markers
-    
-    
+
+
     def maskSelection(self): #when the selection is done and 'Delete' button clicked, remove all selected markers on all images
-        
+
         if masks.generateMask(self.currentMask, self.fileDataPath) is not None:
-            self.parent.parentWindow.devWindow.addInfo('Deleting selected markers..')       
+            self.parent.parentWindow.devWindow.addInfo('Deleting selected markers..')
             progressBar = progressWidget.progressBarDialog('Saving masks..')
             masks.maskData(self.parent, self.currentMask, progressBar)
             self.close()
 
-        
-        
+
+
 class matplotlibWidget(FigureCanvas):  #widget to plot image and points inside the dialog and not on a separate window
-    
+
     def __init__(self):
-        
+
         self.figure = Figure()
         super(matplotlibWidget,self).__init__(self.figure)
-        
+
         self.figure.set_facecolor('none')
         self.canvas = FigureCanvas(self.figure)
         self.canvas.setParent(self)
-        
+
         self.plot = self.figure.add_subplot(111)
         self.toolbar = matplotlibToolbar(self.canvas, self)
-        
+
         self.plot.patch.set_facecolor('none')
-        
+
 class matplotlibToolbar(NavigationToolbar):
-    
+
     def __init__(self, canvas, parent):
 
         self.toolitems = (('Home', 'Reset original view', 'home', 'home'),('Pan', 'Pan axes with left mouse, zoom with right', 'move', 'pan'),('Zoom', 'Zoom to rectangle', 'zoom_to_rect', 'zoom'))
-        
+
         super(matplotlibToolbar, self).__init__(canvas, parent)
         self.setOrientation(Qt.Vertical)
         self.layout().takeAt(3)
-        
+
 
 def launchMaskDialog(self, currentImage): #initialize the variable and execute the window dialog
-    
+
     self.analysisWidget.parentWindow.devWindow.addInfo('Cleaning Procedure Request : Mask Markers.')
 
     deleteMarkers = deleteMarkersDialog(self.analysisWidget, currentImage)
     deleteMarkers.exec_()
-

@@ -11,8 +11,8 @@ More details regarding the project on the GitHub Wiki : https://github.com/Chris
 Current File: This file manages the analysis info dialog
 """
 
-from PySide.QtCore import *
-from PySide.QtGui import *
+from PyQt4.QtCore import *
+from PyQt4.QtGui import *
 import numpy as np
 import plot3D
 import plot2D
@@ -30,26 +30,26 @@ def launchDialog(parent):
     analysisDialog.exec_()
 
 class analysisInfos(QDialog):
-    
+
     def __init__(self, parent):
-        
+
         super(analysisInfos, self).__init__()
-        
-        self.parent = parent        
-        
+
+        self.parent = parent
+
         self.setWindowTitle('Analysis Info')
         self.setMinimumWidth(500)
-        
+
         self.mainLayout = QVBoxLayout()
         #self.mainLayout.setAlignment(Qt.AlignCenter)
         #self.mainLayout.setSpacing(30)
-        
+
         self.setLayout(self.mainLayout)
-        
-        self.openInfos()        
-        
+
+        self.openInfos()
+
     def openInfos(self):
-        
+
         filePath =  self.parent.fileDataPath+'\infoAnalysis.dat'
         filePathMarkers =  self.parent.fileDataPath+'\infoMarkers.dat'
         self.infos = getData.getDataFromFile([filePath], 0, singleColumn=1) #None if not found
@@ -60,9 +60,9 @@ class analysisInfos(QDialog):
             self.mainLayout.addWidget(missingFile)
         else:
             self.displayInfos()
-            
+
     def displayInfos(self):
-        
+
         infoFrame = QFrame()
         infoFrame.setFrameShape(QFrame.StyledPanel)
         nameLayout = QHBoxLayout()
@@ -74,7 +74,7 @@ class analysisInfos(QDialog):
         versionLblValue = QLabel('<b>'+str(versionName)+'</b>')
         authorLbl = QLabel('Author:')
         authorLblValue = QLabel('<b>'+str(self.infos[9])+'</b>')
-        
+
         simpleSeparator = QFrame()
         simpleSeparator.setFrameShape(QFrame.VLine)
         simpleSeparator2 = QFrame()
@@ -87,9 +87,9 @@ class analysisInfos(QDialog):
         nameLayout.addWidget(simpleSeparator2)
         nameLayout.addWidget(authorLbl)
         nameLayout.addWidget(authorLblValue)
-        
+
         infoFrame.setLayout(nameLayout)
-        
+
         globalInfosLayout = QHBoxLayout()
         globalInfosLayout.setContentsMargins(50,0,20,20)
         #globalInfosLayout.setAlignment(Qt.AlignCenter)
@@ -105,7 +105,7 @@ class analysisInfos(QDialog):
         globalInfosLayout.addWidget(imagesLblValue)
         globalInfosLayout.addWidget(markersLbl)
         globalInfosLayout.addWidget(markersLblValue)
-        
+
         currentInfosLayout = QHBoxLayout()
         currentInfosLayout.setContentsMargins(50,20,20,0)
         #currentInfosLayout.setAlignment(Qt.AlignCenter)
@@ -123,11 +123,11 @@ class analysisInfos(QDialog):
         currentInfosLayout.addWidget(currentImagesLblValue)
         currentInfosLayout.addWidget(currentMarkersLbl)
         currentInfosLayout.addWidget(currentMarkersLblValue)
-        
+
         otherInfosLbl = QLabel('- ADDITIONAL INFORMATIONS -')
         otherInfosLbl.setContentsMargins(0,0,0,10)
         otherInfosLbl.setAlignment(Qt.AlignCenter)
-        
+
         otherInfosLayout = QHBoxLayout()
         otherInfosLayout.setContentsMargins(0,0,0,10)
         #otherInfosLayout.setAlignment(Qt.AlignCenter)
@@ -158,7 +158,7 @@ class analysisInfos(QDialog):
         otherInfosLayout.addWidget(instanceLblValue)
         otherInfosLayout.addWidget(nbVersionsLbl)
         otherInfosLayout.addWidget(nbVersionsLblValue)
-        
+
         extraInfosLayout = QHBoxLayout()
         extraInfosLayout.setAlignment(Qt.AlignLeft)
         processingLbl = QLabel('Correlation processing time:')
@@ -191,8 +191,8 @@ class analysisInfos(QDialog):
         extraInfosLayout.addWidget(shiftCorrectionLblValue)
         extraInfosLayout.addWidget(filterLbl)
         extraInfosLayout.addWidget(filterLblValue)
-        
-        
+
+
         plotListLayout = QHBoxLayout()
         plotListLayout.setAlignment(Qt.AlignLeft)
         plotListLayout.setContentsMargins(20,25,0,0)
@@ -210,7 +210,7 @@ class analysisInfos(QDialog):
         plotListLayout.addWidget(self.plotListBox)
         plotListLayout.addWidget(self.plotListOptions)
         plotListLayout.addWidget(self.plotListCheckBox)
-        
+
         matplotlibLayout = QHBoxLayout()
         matplotlibLayout.setContentsMargins(0,0,0,0)
         self.matplotlibPlot = matplotlibWidget()
@@ -221,7 +221,7 @@ class analysisInfos(QDialog):
         self.plotListBox.currentIndexChanged.connect(self.plotOptions)
         self.plotListOptions.currentIndexChanged.connect(self.plotInfos)
         self.plotListCheckBox.stateChanged.connect(lambda: self.plotInfos(self.plotListOptions.currentIndex()))
-        
+
         self.mainLayout.addWidget(infoFrame)
         self.mainLayout.addLayout(currentInfosLayout)
         self.mainLayout.addLayout(globalInfosLayout)
@@ -231,9 +231,9 @@ class analysisInfos(QDialog):
         self.mainLayout.addLayout(plotListLayout)
         self.mainLayout.addLayout(matplotlibLayout)
         self.plotOptions(0)
-        
+
     def plotOptions(self, item):
-        
+
         self.plotListOptions.clear()
         plotOptions = []
         if item == 0:
@@ -241,9 +241,9 @@ class analysisInfos(QDialog):
         for option in plotOptions:
             self.plotListOptions.addItem(option)
         self.plotInfos(0)
-        
+
     def plotInfos(self, option):
-        
+
         self.matplotlibPlot.plot.cla()
         plotType = self.plotListBox.currentIndex()
         onlyActives = self.plotListCheckBox.isChecked()
@@ -257,7 +257,7 @@ class analysisInfos(QDialog):
             else:
                 imageRange = totalImages
             if option == 0:
-                
+
                 errors = np.unique(self.markersInfos)
                 for error in errors:
                     if error == 0:
@@ -273,7 +273,7 @@ class analysisInfos(QDialog):
                             occurence = list(self.markersInfos[:,image]).count(error)
                             for nb in range(occurence):
                                 currentList.append(image)
-                    if currentList <> []:
+                    if currentList != []:
                         legend.append(self.plotListOptions.itemText(error))
                     errorList.append(currentList)
             else:
@@ -288,7 +288,7 @@ class analysisInfos(QDialog):
                         occurence = list(self.markersInfos[:,image]).count(option)
                         for nb in range(occurence):
                             currentList.append(image)
-                if currentList <> []:
+                if currentList != []:
                     legend.append(self.plotListOptions.itemText(option))
                     errorList.append(currentList)
             #errorList = np.array(errorList)
@@ -302,19 +302,19 @@ class analysisInfos(QDialog):
             else:
                 ax = self.matplotlibPlot.plot
                 ax.text(.5, .5, 'No error.', ha='center', va='center', transform = ax.transAxes, color='red')
-            
-        
+
+
         self.matplotlibPlot.draw_idle()
-        
-        
-        
+
+
+
 class matplotlibWidget(FigureCanvas):
-    
+
     def __init__(self):
-        
+
         self.figure = Figure()
         super(matplotlibWidget,self).__init__(self.figure)
-        
+
         self.figure.set_facecolor('none')
         self.canvas = FigureCanvas(self.figure)
 

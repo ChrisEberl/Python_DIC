@@ -10,9 +10,8 @@ More details regarding the project on the GitHub Wiki : https://github.com/Chris
 
 Current File: This file manages the profile dialog and profile functions
 """
-from PySide.QtGui import *
-from PySide.QtCore import *
-
+from PyQt4.QtGui import *
+from PyQt4.QtCore import *
 
 import numpy as np
 import sys
@@ -20,7 +19,7 @@ import os
 import DIC
 
 def readProfile(filePath, default=None):
-    
+
     try:
         labels = np.genfromtxt(filePath, delimiter='|', dtype=str, autostrip=True) #read the first column / labels
     except:
@@ -29,14 +28,14 @@ def readProfile(filePath, default=None):
             labels = np.genfromtxt(filePath, delimiter='|', dtype=str, autostrip=True) #read the first column / labels
         else:
             return None
-        
+
     data = {label: row for label, row in zip(labels[:,0], labels[:,1:])}
-    
+
     return data #to read data : data['User'], data['CorrSize'] ...
 
 
 def addProfile(parent, profile):
-    
+
     parameters = np.genfromtxt(parent.profilePath, delimiter='|', dtype=str, autostrip=True) #read the first column / labels
     data = {label: row for label, row in zip(parameters[:,0], parameters[:,1:])}
     for keys in data.keys():
@@ -44,14 +43,14 @@ def addProfile(parent, profile):
     newParameters = np.column_stack([np.array(data.keys()), np.array(data.values())])
     np.savetxt(parent.profilePath, newParameters, delimiter='|', fmt="%s")
     changeProfile(parent, profile['User'])
-    
+
 def manageProfile(parent):
-    
+
     startDialog = manageAllProfiles(parent)
     startDialog.exec_()
 
 def changeProfile(parent, user):
-    
+
     changeP = QMessageBox()
     changeP.setWindowTitle("Warning")
     changeP.setText("You will have to restart the program to load the following profile : "+user)
@@ -64,10 +63,10 @@ def changeProfile(parent, user):
         saveNew = setDefaultProfile(parent, user)
         if saveNew == 'OK':
             quit_program()
-            
-        
+
+
 def setDefaultProfile(parent, user):
-    
+
     parameters = np.genfromtxt(parent.profilePath, delimiter='|', dtype=str, autostrip=True) #read the first column / labels
     data = {label: row for label, row in zip(parameters[:,0], parameters[:,1:])}
     countProfile = -1
@@ -85,10 +84,10 @@ def setDefaultProfile(parent, user):
     newParameters = np.column_stack([np.array(data.keys()), np.array(data.values())])
     np.savetxt(parent.profilePath, newParameters, delimiter='|', fmt="%s")
     return 'OK'
-        
-    
-def quit_program(): #close and restart the window 
-    
+
+
+def quit_program(): #close and restart the window
+
     # !!! SAVE DATA BEFORE CALLING THE FUNCTION !!! #
     #python = sys.executable
     #os.execl(python, python, *sys.argv)
@@ -96,18 +95,18 @@ def quit_program(): #close and restart the window
 
 
 class manageAllProfiles(QDialog):
-    
+
     def __init__(self, parent):
-        
+
         super(manageAllProfiles, self).__init__()
         self.setWindowTitle('Profile Management')
         #self.setMinimumSize(400,500)
-        
+
         self.currentProfile = parent.currentProfile
         self.profileData = parent.profileData
         self.defaultProfile = parent.defaultProfile
         self.profilePath = parent.profilePath
-        
+
         dialogLayout = QVBoxLayout()
 
         profileListLayout = QHBoxLayout()
@@ -153,7 +152,7 @@ class manageAllProfiles(QDialog):
         windowLayout.addWidget(self.sizeLbl)
         windowLayout.addWidget(self.sizeWidget)
         windowBox.setLayout(windowLayout)
-        
+
         newBox = QGroupBox('New Analysis')
         corrsizeLayout = QHBoxLayout()
         corrsizeLayout.setAlignment(Qt.AlignCenter)
@@ -163,10 +162,10 @@ class manageAllProfiles(QDialog):
         corrsizeLayout.addWidget(corrsizeLbl)
         corrsizeLayout.addWidget(self.corrsizeValue)
         newBox.setLayout(corrsizeLayout)
-        
+
         profileBox = QGroupBox('Profile Info')
         profileInfoLayout = QVBoxLayout()
-        
+
         profileLayout = QHBoxLayout()
         profileLayout.setAlignment(Qt.AlignCenter)
         profileLbl = QLabel('Name:')
@@ -179,7 +178,7 @@ class manageAllProfiles(QDialog):
         profileLayout.addWidget(profileLbl)
         profileLayout.addWidget(self.profileName)
         profileLayout.addWidget(self.profileDelete)
-        
+
         processesLayout = QHBoxLayout()
         processesLayout.setAlignment(Qt.AlignCenter)
         processesLbl = QLabel('Use ')
@@ -193,15 +192,15 @@ class manageAllProfiles(QDialog):
         profileInfoLayout.addLayout(profileLayout)
         profileInfoLayout.addLayout(processesLayout)
         profileBox.setLayout(profileInfoLayout)
-                
+
         saveLayout = QHBoxLayout()
         saveButton = QPushButton('Save Changes')
         saveButton.setMaximumWidth(100)
         saveButton.clicked.connect(self.saveProfile)
         saveLayout.addStretch(1)
         saveLayout.addWidget(saveButton)
-        saveLayout.addStretch(1)            
-                
+        saveLayout.addStretch(1)
+
         dialogLayout.addLayout(profileListLayout)
         dialogLayout.addWidget(windowBox)
         dialogLayout.addWidget(newBox)
@@ -209,10 +208,10 @@ class manageAllProfiles(QDialog):
         dialogLayout.addLayout(saveLayout)
         self.setLayout(dialogLayout)
         self.initSettings(firstInit = 1)
-        
+
 
     def initSettings(self, firstInit=0):
-                
+
         if firstInit == 0:
             checkSave = self.saveProfileTemp()
             if checkSave is None:
@@ -220,7 +219,7 @@ class manageAllProfiles(QDialog):
             self.currentIndex = self.profileList.currentIndex()
         else:
             self.currentIndex = self.currentProfile
-        
+
         #window Settings
         fullScreen = int(self.profileData['FullScreen'][self.currentIndex])
         width = int(self.profileData['Width'][self.currentIndex])
@@ -235,11 +234,11 @@ class manageAllProfiles(QDialog):
             self.fullScreenBox.setChecked(False)
             self.sizeLbl.setEnabled(True)
             self.sizeWidget.setEnabled(True)
-            
+
         #new Analysis Settings
         corrSizeValue = int(self.profileData['CorrSize'][self.currentIndex])
         self.corrsizeValue.setValue(corrSizeValue)
-        
+
         #profile Settings
         profileName = str(self.profileData['User'][self.currentIndex])
         self.profileName.setText(profileName)
@@ -249,7 +248,7 @@ class manageAllProfiles(QDialog):
             self.profileDelete.setEnabled(True)
         processesValue = int(self.profileData['nbProcesses'][self.currentIndex])
         self.processesValue.setValue(processesValue)
-            
+
     def newProfile(self):
 
         newProfileIndex = len(self.profileData['User'])
@@ -262,9 +261,9 @@ class manageAllProfiles(QDialog):
             self.profileData[key] = np.array(profileData)
         self.profileList.addItem(self.profileData['User'][newProfileIndex])
         self.profileList.setCurrentIndex(newProfileIndex)
-        
+
     def deleteProfile(self):
-        
+
         nbProfiles = len(self.profileData['User'])
         for profile in range(nbProfiles):
             if self.profileData['User'][profile] == self.profileList.itemText(self.currentIndex):
@@ -278,15 +277,15 @@ class manageAllProfiles(QDialog):
                 #self.profileList.setCurrentIndex(self.currentProfile)
                 self.profileList.removeItem(profile)
                 break
-            
+
     def saveProfileTemp(self, finalSaving=0):
-        
+
         #window Settings
         if self.fullScreenBox.isChecked():
             fullScreen = 1
         else:
             fullScreen = 0
-            
+
         try:
             width = int(self.widthEdit.text())
         except:
@@ -297,18 +296,18 @@ class manageAllProfiles(QDialog):
         except:
             self.profileError('Wrong Height Size', finalSaving=finalSaving)
             return None
-        
+
         corrSize = self.corrsizeValue.value()
         profileName = self.profileName.text()
         if profileName == '':
             self.profileError('Please enter a profile name.', finalSaving=finalSaving)
             return None
         for user in self.profileData['User']:
-            if user == profileName and user <> self.profileData['User'][self.currentIndex]:
+            if user == profileName and user != self.profileData['User'][self.currentIndex]:
                 self.profileError('This profile already exist.', finalSaving=finalSaving)
                 return None
         nbProcesses = self.processesValue.value()
-        
+
         self.profileData['FullScreen'][self.currentIndex] = fullScreen
         self.profileData['Width'][self.currentIndex] = width
         self.profileData['Height'][self.currentIndex] = height
@@ -316,11 +315,11 @@ class manageAllProfiles(QDialog):
         self.profileData['User'][self.currentIndex] = profileName
         self.profileData['nbProcesses'][self.currentIndex] = nbProcesses
         self.profileList.setItemText(self.currentIndex, profileName)
-        
+
         return True
-    
+
     def saveProfile(self):
-        
+
         temp = self.saveProfileTemp(finalSaving=1)
         if temp:
             newParameters = np.column_stack([np.array(self.profileData.keys()), np.array(self.profileData.values())])
@@ -335,16 +334,16 @@ class manageAllProfiles(QDialog):
             self.close()
 
     def profileError(self, error, finalSaving=0):
-        
-        if self.currentIndex <> self.profileList.currentIndex() or finalSaving == 1:
+
+        if self.currentIndex != self.profileList.currentIndex() or finalSaving == 1:
             errorMessage = QMessageBox()
             errorMessage.setWindowTitle('Warning')
             errorMessage.setText(error)
             errorMessage.exec_()
         self.profileList.setCurrentIndex(self.currentIndex)
-        
+
     def fullScreenBox_Changed(self):
-        
+
         if self.fullScreenBox.isChecked():
             self.sizeLbl.setEnabled(False)
             self.sizeWidget.setEnabled(False)

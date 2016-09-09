@@ -11,16 +11,16 @@ More details regarding the project on the GitHub Wiki : https://github.com/Chris
 Current File: This file manages the start-up event
 """
 
-from PySide.QtGui import *
-from PySide.QtCore import *
+from PyQt4.QtGui import *
+from PyQt4.QtCore import *
 import fileList
 
 def StartWidget(self, parent, message):
-    
+
     welcome = QVBoxLayout()
     welcome.setSpacing(30)
     welcome.setAlignment(Qt.AlignHCenter)
-    
+
     new = QPushButton('New Analysis')
     newFont = new.font()
     newFont.setPointSize(12)
@@ -29,7 +29,7 @@ def StartWidget(self, parent, message):
     new.setMinimumHeight(50)
     new.enterEvent = lambda x: testEvent(new, 'Correlate Images')
     new.leaveEvent = lambda x: testEvent(new, 'New Analysis')
-    
+
     openFile = QPushButton('Open Analysis')
     openFont = openFile.font()
     openFont.setPointSize(12)
@@ -38,11 +38,11 @@ def StartWidget(self, parent, message):
     openFile.setMinimumHeight(50)
     openFile.enterEvent = lambda x: testEvent(openFile, 'Analyse Results')
     openFile.leaveEvent = lambda x: testEvent(openFile, 'Open Analysis')
-    
-    
+
+
     welcome.addWidget(new)
     welcome.addWidget(openFile)
-    
+
     if message is not None:
         messageLbl = QLabel(message)
         messageLbl.setAlignment(Qt.AlignCenter)
@@ -53,14 +53,14 @@ def StartWidget(self, parent, message):
         messageLbl.setAutoFillBackground(True)
         messageLbl.setPalette(p)
         welcome.addWidget(messageLbl)
-        
+
     new.clicked.connect(lambda: fileList.generateFileList(parent))
     openFile.clicked.connect(lambda: fileList.openFileList(parent))
-        
+
     self.setLayout(welcome)
-    
+
 def testEvent(button, text):
-    
+
     currentFont = button.font()
     button.setText(text)
     button.setFont(currentFont)
