@@ -36,7 +36,7 @@ def initPlottedData(parent, progressBar, currentMask, thread):
     activeImages = []
     parent.currentMask = currentMask
     for image in range(parent.nb_image):
-        markersActiveOnCurrentImage = [marker for marker in allMarkers if currentMask[marker,image] == 1]
+        markersActiveOnCurrentImage = np.array([marker for marker in allMarkers if currentMask[marker,image] == 1]).astype(np.int)
         nbActiveMarkersInImage = len(np.atleast_1d(markersActiveOnCurrentImage))
         if nbActiveMarkersInImage >= 1:
             activeImages.append(image)
@@ -68,7 +68,6 @@ def initPlottedData(parent, progressBar, currentMask, thread):
             activeInstances = np.setdiff1d(activeInstances, instance, assume_unique=True)
     parent.grid_instances = gridInstances
     parent.activeInstances = activeInstances
-
 
     #getting markers neighborhood
     fileDataPath = parent.parentWindow.fileDataPath
@@ -195,7 +194,8 @@ def calculateCoordinates(imageStart, imageEnd, data_x, data_y, disp_x, disp_y, d
             currentStrainYX = []
             strainCalculated = []
             for marker in instanceMarkers:
-                activeNeighbors = [int(neighbor) for neighbor in neighbors[marker] if neighbor in instanceMarkers]
+                activeNeighbors = np.array([neighbor for neighbor in neighbors[marker] if neighbor in instanceMarkers]).astype(np.int)
+
                 xData = data_x[activeNeighbors, currentImage]
                 yData = data_y[activeNeighbors, currentImage]
                 dispDataX = disp_x[activeNeighbors, currentImage]
@@ -241,14 +241,25 @@ def calculateCoordinates(imageStart, imageEnd, data_x, data_y, disp_x, disp_y, d
         return result
 
 
-def calculateNeighbors(activeMarkers, data_x_init, data_y_init, minNeighbors, maxCorrDistance, fileDataPath, progressBar=None):
+
+def calculateNeighbors(activeMarkers, data_x_init, data_y_init, minNeighbors, fileDataPath, progressBar=None):
 #return an array containing at least the 'minNeighbors' closest neighbors of each marker and save it in analysis folder
 
+    activeMarkers = np.array(activeMarkers).astype(np.int)
     markerNeighbors = []
-    minDistance = max(np.absolute(data_x_init[1]-data_x_init[0]), np.absolute(data_y_init[1]-data_y_init[0]))
+    maxCorrDistance = 0
+    data_x_unique = np.unique(data_x_init.astype(np.int))
+    data_y_unique = np.unique(data_y_init.astype(np.int))
+    if len(np.atleast_1d(data_x_unique)) > 1 and len(np.atleast_1d(data_y_unique)) > 1:
+        minDistance = max(np.absolute(data_x_unique[1]-data_x_unique[0]), np.absolute(data_y_unique[1]-data_y_unique[0]))
+        maxCorrDistance = max(np.max(data_x_unique)-np.min(data_x_unique), np.max(data_y_unique)-np.min(data_y_unique))
+    else:
+        minDistance = maxCorrDistance
+    if minDistance < 5:
+        minDistance = 5
     nbMarkers = len(activeMarkers)
     maxNeighbors = 0
-    maxIteration = int(maxCorrDistance / minDistance)
+    maxIteration = int(maxCorrDistance / minDistance) + 1
     if nbMarkers < minNeighbors:
         minNeighbors = nbMarkers
     previousTime = time.time()
@@ -266,6 +277,7 @@ def calculateNeighbors(activeMarkers, data_x_init, data_y_init, minNeighbors, ma
 
         nbNeighbors = 0
         distance = minDistance
+        currentMarkerNeighbors = []
         for iteration in range(maxIteration):
             minX = data_x_init[target_marker]-distance
             maxX = data_x_init[target_marker]+distance

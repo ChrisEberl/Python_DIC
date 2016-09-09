@@ -45,7 +45,7 @@ def prepareCorrelations(fileNameList, gridX, gridY, corrsize, baseMode, floatSte
         fileNameList[image] = fileNameList[image].rstrip()
     fileNameList = np.array(fileNameList)
 
-    activeImages = parentWidget.imageActiveList
+    activeImages = np.array(parentWidget.imageActiveList).astype(np.int)
 
     if fileNameList is None:
         return
@@ -95,9 +95,7 @@ def prepareCorrelations(fileNameList, gridX, gridY, corrsize, baseMode, floatSte
     parentWidget.calculationBar.changeValue(1, '(2/2) Calculating neighborhood...')
     activeMarkers = np.linspace(0, numOfBasePoints, num=numOfBasePoints, endpoint=False).astype(np.int)
     minNeighbors = 16
-    maxCorrDistance = 100
-    initData.calculateNeighbors(activeMarkers, result[0][:,image], result[1][:,image], minNeighbors, maxCorrDistance, parentWindow.fileDataPath, progressBar=parentWidget.calculationBar)
-
+    initData.calculateNeighbors(activeMarkers, result[0][:,activeImages[0]], result[1][:,activeImages[0]], minNeighbors, parentWindow.fileDataPath, progressBar=parentWidget.calculationBar)
 
     #data saving
     parentWidget.calculationBar.changeValue(100, 'Saving .dat files...')

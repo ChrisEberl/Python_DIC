@@ -168,7 +168,7 @@ class ResultAnalysis(QWidget):
 
         activeImages = self.parentWidget.activeImages
         nbActiveImages = len(activeImages)
-        
+
         if nbActiveImages < 1 or len(np.atleast_1d(self.parentWidget.zi)) < 1:
             return
 

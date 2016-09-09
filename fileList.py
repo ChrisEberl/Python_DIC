@@ -30,6 +30,7 @@ def generateFileList(self): #called when a new analysis is started
 
 
     self.filePathTest = QFileDialog.getOpenFileName(self, 'Select first image', '', 'Image Files (*.tif *.tiff *.bmp *.jpg *.jpeg *.png)')
+
     if self.filePathTest == '':
         return
     else: #create the file list when an image is selected
@@ -109,7 +110,7 @@ class nameAnalysis(QDialog):
         infoLbl.setAlignment(Qt.AlignCenter)
 
         imageLayout = QHBoxLayout()
-        self.plotArea = MatplotlibImageWidget(self)
+        self.plotArea = MatplotlibImageWidget()
         self.plotArea.setMaximumHeight(300)
         self.imageList = QListView()
         self.imageList.setMinimumWidth(200)
@@ -237,7 +238,8 @@ class nameAnalysis(QDialog):
 
 class MatplotlibImageWidget(FigureCanvas):
 
-    def __init__(self, parentWidget):
+    def __init__(self):
+
         super(MatplotlibImageWidget,self).__init__(Figure())
         self.figure = Figure()
         self.figure.set_facecolor('none')

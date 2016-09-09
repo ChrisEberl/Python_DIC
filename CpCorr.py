@@ -23,10 +23,10 @@ def cpcorr(InputPoints,BasePoints,Input,Base, CORRSIZE):
     CorrCoef=[]
 
     # get all rectangle coordinates
-    rects_moving = calc_rects(xymoving_in,CORRSIZE,moving)
+    rects_moving = np.array(calc_rects(xymoving_in,CORRSIZE,moving)).astype(np.int)
+    rects_fixed = np.array(calc_rects(xyfixed_in,2*CORRSIZE,fixed)).astype(np.int)
+    ncp = len(np.atleast_1d(xymoving_in))
 
-    rects_fixed = calc_rects(xyfixed_in,2*CORRSIZE,fixed)
-    ncp = len(xymoving_in)
     xymoving = xymoving_in    # initialize adjusted control points matrix
     CorrCoef=np.zeros((ncp,1))
     StdX=np.zeros((ncp,1))
@@ -163,6 +163,7 @@ def calc_rects(xy,halfwidth,img):
     #height[idx] = 0
 
     rect = [left.astype(np.int), upper.astype(np.int), width.astype(np.int), height.astype(np.int)]
+
     return rect
 
 def adjust_lo_edge(coordinates,edge,breadth):
