@@ -120,7 +120,7 @@ def renameMask(parent, name):
 def maskData(parentWindow, mask, progressBar=None, dataList=None):
 
     if progressBar is not None:
-        progressBar.changeValue(1, 'Applying masks...')
+        progressBar.currentTitle = 'Applying masks...'
 
 #    if dataList is None:
 #        data_x = parentWindow.data_x
@@ -200,7 +200,8 @@ def newMasksCalculated(parentWindow, progressBar):
 
     openMask(parentWindow.parentWindow)
     parentWindow.controlWidget.updateAnalysisInfos()
-    progressBar.changeValue(100, '-')
+    progressBar.percent = 100
+    #progressBar.changeValue(100, '-')
     parentWindow.resultAnalysis.graphRefresh(imageValue=0)
 
 #def getMask(data):

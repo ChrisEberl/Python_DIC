@@ -92,21 +92,40 @@ def prepareCorrelations(fileNameList, gridX, gridY, corrsize, baseMode, floatSte
     parentWindow.devWindow.addInfo('Calculation finished. Saving data files.')
 
     #neighbors calculation
-    parentWidget.calculationBar.changeValue(1, '(2/2) Calculating neighborhood...')
+    #parentWidget.calculationBar.changeValue(1, '(2/2) Calculating neighborhood...')
+    parentWidget.calculationBar.percent = 0
+    parentWidget.calculationBar.currentTitle = '(2/2) Calculating neighborhood...'
     activeMarkers = np.linspace(0, numOfBasePoints, num=numOfBasePoints, endpoint=False).astype(np.int)
     minNeighbors = 16
     initData.calculateNeighbors(activeMarkers, result[0][:,activeImages[0]], result[1][:,activeImages[0]], minNeighbors, parentWindow.fileDataPath, progressBar=parentWidget.calculationBar)
 
     #data saving
-    parentWidget.calculationBar.changeValue(100, 'Saving .dat files...')
+    parentWidget.calculationBar.percent = 0
+    parentWidget.calculationBar.currentTitle = 'Saving validx.dat...'
     Save('validx.dat', result[0], parentWindow.fileDataPath)
+    parentWidget.calculationBar.percent = 10
+    parentWidget.calculationBar.currentTitle = 'Saving validy.dat...'
     Save('validy.dat', result[1], parentWindow.fileDataPath)
+    parentWidget.calculationBar.percent = 20
+    parentWidget.calculationBar.currentTitle = 'Saving stdx.dat...'
     Save('stdx.dat', result[3], parentWindow.fileDataPath)
+    parentWidget.calculationBar.percent = 30
+    parentWidget.calculationBar.currentTitle = 'Saving stdy.dat...'
     Save('stdy.dat', result[4], parentWindow.fileDataPath)
+    parentWidget.calculationBar.percent = 40
+    parentWidget.calculationBar.currentTitle = 'Saving corrcoef.dat...'
     Save('corrcoef.dat', result[2], parentWindow.fileDataPath)
+    parentWidget.calculationBar.percent = 50
+    parentWidget.calculationBar.currentTitle = 'Saving dispx.dat...'
     Save('dispx.dat', result[5], parentWindow.fileDataPath)
+    parentWidget.calculationBar.percent = 60
+    parentWidget.calculationBar.currentTitle = 'Saving dispy.dat...'
     Save('dispy.dat', result[6], parentWindow.fileDataPath)
+    parentWidget.calculationBar.percent = 70
+    parentWidget.calculationBar.currentTitle = 'Saving filenamelist.dat...'
     Save('filenamelist.dat', fileNameList, parentWindow.fileDataPath)
+    parentWidget.calculationBar.percent = 80
+    parentWidget.calculationBar.currentTitle = 'Saving infoMarkers.dat...'
     Save('infoMarkers.dat', result[7].astype(int), parentWindow.fileDataPath)
     if len(filterInfos) > 0:
         filterWidget.saveOpenFilter(parentWindow.fileDataPath, filterList=filterInfos)
@@ -124,10 +143,14 @@ def prepareCorrelations(fileNameList, gridX, gridY, corrsize, baseMode, floatSte
     infosAnalysis.append(numOfImages*numOfBasePoints)
     infosAnalysis.append(isLargeDisp)
     infosAnalysis.append(str(parentWindow.profileData['User'][parentWindow.currentProfile]))
+
+    parentWidget.calculationBar.percent = 90
+    parentWidget.calculationBar.currentTitle = 'Saving infoAnalysis.dat...'
     Save('infoAnalysis.dat', np.array(infosAnalysis), parentWindow.fileDataPath)
     if isLargeDisp:
+        parentWidget.calculationBar.percent = 95
+        parentWidget.calculationBar.currentTitle = 'Saving largeDisp.dat...'
         Save('largeDisp.dat', largeDisp, parentWindow.fileDataPath)
-
 
     parentWindow.devWindow.addInfo('Processing Time : '+str(totalTime))
     infosThread.emit([1])

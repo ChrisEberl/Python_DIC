@@ -46,7 +46,7 @@ class MainAnalysis(QWidget):
         self.mainLayout.setAlignment(Qt.AlignHCenter)
 
         #Creation of the temporary progressBar
-        self.openingBar = progressWidget.progressBarWidget(maximumWidth=250, minimumHeight=30)
+        self.openingBar = progressWidget.progressBarWidget(maximumWidth=300)
         self.mainLayout.addWidget(self.openingBar)
         self.setLayout(self.mainLayout)
 
@@ -105,7 +105,7 @@ class MainAnalysis(QWidget):
         menubar.menuEnabled(self.parentWindow)
 
         self.parentWindow.devWindow.addInfo('Menus enabled. Toolbar created. Setting-up the layout.')
-
+        self.resultAnalysis = ResultAnalysis(self)
 
         #control widget
         self.controlWidget = controlWidget.controlWidget(self)
@@ -113,6 +113,9 @@ class MainAnalysis(QWidget):
         self.mainLayout.addWidget(self.controlWidget)
         self.mainLayout.addStretch(1)
 
+        #activate event for slider
+        #self.controlWidget.imageSelector.valueChanged.connect(lambda: self.resultAnalysis.graphRefresh())
+        #self.controlWidget.sliderSelector.valueChanged.connect(lambda: self.resultAnalysis.graphRefresh)
 
         self.parentWindow.devWindow.addInfo('Layout ready. Starting the visualisation.')
 
@@ -121,15 +124,9 @@ class MainAnalysis(QWidget):
 
     def run(self):
 
-
-        self.resultAnalysis = ResultAnalysis(self)
-
         self.currentMask = masks.openMask(self.parentWindow)
         initData.createPlots(self)
 
-        #activate event for slider
-        self.controlWidget.imageSelector.valueChanged.connect(self.resultAnalysis.graphRefresh)
-        self.controlWidget.sliderSelector.valueChanged.connect(self.resultAnalysis.graphRefresh)
 
         progressBar = progressWidget.progressBarDialog('Opening processes..')
 
@@ -138,31 +135,11 @@ class MainAnalysis(QWidget):
         #self.controlWidget.updateAnalysisInfos()
 
 
-    def changeParameters(self):
-
-        self.new_coeff, self.ok = QInputDialog.getInt(self, 'Standard Dev.', 'Multiplication Coeff. :', value=self.m_coeff, minValue=1, step=5)
-        if self.ok:
-            self.m_coeff = self.new_coeff
-            self.parentWindow.devWindow.addInfo('New Std. Dev. Multiplication Coeff. : '+str(self.m_coeff))
-
-            self.parentWindow.statusBar().showMessage('Multiplication coefficient for standard deviation changed. New value : '+str(self.m_coeff))
-            self.resultAnalysis.graphRefresh(self.slider.value())
-
-
 class ResultAnalysis(QWidget):
 
     def __init__(self, parentWidget):
 
         self.parentWidget = parentWidget
-
-
-#    @Slot()
-#    def sliderChange(self, value): #called when the value of the slider change
-#        tic = time.time()
-#        self.graphRefresh(value)
-#        toc = time.time()
-#        self.parentWidget.parentWindow.statusBar().showMessage('Refreshing Time : '+str(toc-tic)+'s') #change infos label
-
 
     def graphRefresh(self, imageValue=0): #function to refresh the different 3d-plots
 

@@ -340,20 +340,21 @@ class RelativeNDialog(QDialog):
                     self.targetNotReached.setText('<font color=green>Target reached.</font>')
                 else:
                     self.targetNotReached.setText('<font color=red><b>Could not reach target.</b></font>')
-            self.progressBarDialog.changeValue(100,'-')
+            self.progressBarDialog.percent = 100
             self.deleteButton.setEnabled(True)
             self.plotRelativeN()
 
         else: #calculation
 
             if matrixOrInt == 0: #finished but couldnt reach target
-                self.progressBarDialog.changeValue(100,'-')
+                self.progressBarDialog.percent = 100
                 self.targetNotReached.setText('No markers to delete.')
                 self.deleteButton.setEnabled(True)
                 self.plotRelativeN()
             else: #running
                 display = 'Iteration : '+str(data[4])+'/'+str(data[1])+' | '+str(data[3])+' markers. | Iteration Time : '+str(data[2])
-                self.progressBarDialog.changeValue(int(matrixOrInt),display)
+                self.progressBarDialog.percent = int(matrixOrInt)
+                self.progressBarDialog.currentTitle = display
 
 
 

@@ -18,8 +18,6 @@ import multiprocessing
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 import matplotlib
-#matplotlib.use('Qt4Agg')
-#matplotlib.rcParams['backend.qt4'] = 'PySide'
 
 import startWidget
 import profile
@@ -112,6 +110,7 @@ class MainWindow(QMainWindow):
 
 
         if progressBar is not None: #calculation and update of the progressBar
+            progressBar.currentTitle = textBar
             lastPercent = 0
             a = []
             for i in range(PROCESSES):
@@ -127,7 +126,7 @@ class MainWindow(QMainWindow):
                         alive = 1
                 total = sum(a)/PROCESSES
                 if total != lastPercent:
-                    progressBar.changeValue(total, textBar) #change the value of the progresBar every percent
+                    progressBar.percent = total #change the value of the progresBar every percent
                     lastPercent = total
                 time.sleep(.1) #refresh every 0.1 sec  - Important for the loop (freeze if too fast)
 

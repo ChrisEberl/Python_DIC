@@ -270,10 +270,10 @@ def calculateNeighbors(activeMarkers, data_x_init, data_y_init, minNeighbors, fi
         if progressBar is not None:
             currentProgress = int(markerProcessed * 100 / nbMarkers)
             currentTime = time.time()
-            if currentTime > previousTime + .05 and currentProgress != previousProgress:
+            if currentTime > previousTime + .05 and currentProgress != previousProgress and currentProgress < 100:
                 previousTime = currentTime
                 previousProgress = currentProgress
-                progressBar.changeValue(currentProgress)
+                progressBar.percent = currentProgress
 
         nbNeighbors = 0
         distance = minDistance

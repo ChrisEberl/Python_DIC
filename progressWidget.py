@@ -10,19 +10,20 @@ More details regarding the project on the GitHub Wiki : https://github.com/Chris
 
 Current File: This file manages the progress bars functions
 """
-
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 import time
 
+REFRESH_TIME = 0.1
+
 class progressBarWidget(QWidget): #Called for every time consuming operation / Embedded in a layout
 
-    def __init__(self, minimumWidth = 0, maximumWidth = 100, minimumHeight = 0, maximumHeight = 60, title = ''):
+    def __init__(self, minimumWidth = 400, maximumWidth = 600, minimumHeight = 100, maximumHeight = 150, title = ''):
 
         super(progressBarWidget, self).__init__()
 
-        self.setMaximumWidth(maximumWidth*1.1)
-        self.setMaximumHeight(maximumHeight*2)
+        self.setMaximumWidth(maximumWidth)
+        self.setMaximumHeight(maximumHeight)
         self.layout = QVBoxLayout()
         self.layout.setAlignment(Qt.AlignVCenter)
         self.layout.setAlignment(Qt.AlignHCenter)
@@ -36,6 +37,8 @@ class progressBarWidget(QWidget): #Called for every time consuming operation / E
         self.progressBar.setMaximumHeight(maximumHeight)
 
         self.horizontalWidget = QWidget()
+        self.horizontalWidget.setContentsMargins(0,0,0,0)
+        self.horizontalWidget.setMinimumHeight(40)
         self.horizontalLayout = QHBoxLayout()
         self.timeLbl = QLabel('Remaining Time :')
         self.timeValue = QLabel('-')
@@ -50,16 +53,33 @@ class progressBarWidget(QWidget): #Called for every time consuming operation / E
         self.setLayout(self.layout)
 
         self.initTime = time.time()
+        self.percent = 0
+        self.lastPercent = 0
+        self.currentTitle = title
+        self.lastTitle = title
+        self.progressTimer = QTimer()
+        self.progressTimer.timeout.connect(self.changeValue)
+        self.progressTimer.start(REFRESH_TIME)
 
 
-    def changeValue(self, percent, text=None):
+    def changeValue(self):
 
-        self.progressBar.setValue(percent)
-        if text is not None:
-            self.progressTitle.setText(text)
-        if percent != 0:
-            self.remainingTime = (time.time() - self.initTime)*(100-percent)/percent
-            self.timeValue.setText(str(self.remainingTime))
+        percent = self.percent
+        if self.currentTitle != self.lastTitle:
+            self.progressTitle.setText(self.currentTitle)
+        if percent != self.lastPercent:
+            self.progressBar.setValue(percent)
+            remainingTime = (time.time() - self.initTime)*(100-percent)/percent
+            if remainingTime > 60:
+                remainingTime = remainingTime / 60
+                if remainingTime - int(remainingTime) > 0.5:
+                    self.timeValue.setText(str(int(remainingTime))+ ' minutes')
+                else:
+                    self.timeValue.setText(str(int(remainingTime))+ ' minutes and 30 secondes')
+            elif remainingTime > 30:
+                self.timeValue.setText('< 1 minute')
+            else:
+                self.timeValue.setText(str(int(remainingTime))+ ' secondes.')
 
 
 class progressBarDialog(QProgressDialog): #Called for every time consuming operation / Separated Window Dialog
@@ -77,9 +97,18 @@ class progressBarDialog(QProgressDialog): #Called for every time consuming opera
         self.setMinimumDuration(1000)
         self.setValue(0)
 
-    def changeValue(self, percent, text=None):
+        self.percent = 0
+        self.lastPercent = 0
+        self.currentTitle = labelText
+        self.lastTitle = labelText
+        self.progressTimer = QTimer()
+        self.progressTimer.timeout.connect(self.changeValue)
+        self.progressTimer.start(REFRESH_TIME)
 
-        if percent > 0:
+    def changeValue(self):
+
+        percent = self.percent
+        if self.currentTitle != self.lastTitle:
+            self.setLabelText(self.currentTitle)
+        if percent != self.lastPercent:
             self.setValue(percent)
-        if text is not None:
-            self.setLabelText(text)

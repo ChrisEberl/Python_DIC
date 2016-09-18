@@ -135,11 +135,13 @@ class controlWidget(QWidget):
 
         self.imageSelector = QDial()
         self.imageSelector.setContentsMargins(0,0,0,0)
+        self.imageSelector.valueChanged.connect(lambda: self.updateSlider(self.imageSelector))
 
         currentLayout.addWidget(imageInfoFrame)
         currentLayout.addWidget(self.imageSelector)
 
         self.sliderSelector = QSlider(Qt.Horizontal)
+        self.sliderSelector.valueChanged.connect(lambda: self.updateSlider(self.sliderSelector))
 
         layout.addStretch(1)
         layout.addWidget(analysisFrame)
@@ -148,6 +150,16 @@ class controlWidget(QWidget):
 
         self.setLayout(layout)
 
+    def updateSlider(self, slider):
+
+        imageValue = slider.value()
+        if slider == self.imageSelector:
+            if self.sliderSelector.value != imageValue:
+                self.sliderSelector.setValue(imageValue)
+        else:
+            if self.imageSelector.value != imageValue:
+                self.imageSelector.setValue(imageValue)
+        self.parent.resultAnalysis.graphRefresh(imageValue)
 
     def updateAnalysisInfos(self):
 

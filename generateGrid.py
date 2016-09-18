@@ -69,7 +69,7 @@ class generateGridWidget(QWidget):
 
         calculationWidget = QWidget()
         calculationLayout = QHBoxLayout()
-        self.calculationBar = progressWidget.progressBarWidget(minimumWidth=250, maximumWidth=600, minimumHeight=20, maximumHeight=50, title='Starting Processes...') #progressBar widget stacked with topWidget and shown when starting the processCorrelation
+        self.calculationBar = progressWidget.progressBarWidget(title='Starting Processes...') #progressBar widget stacked with topWidget and shown when starting the processCorrelation
         calculationLayout.addStretch(1)
         calculationLayout.addWidget(self.calculationBar)
         calculationLayout.addStretch(1)
