@@ -33,17 +33,6 @@ def readProfile(filePath, default=None):
 
     return data #to read data : data['User'], data['CorrSize'] ...
 
-
-def addProfile(parent, profile):
-
-    parameters = np.genfromtxt(parent.profilePath, delimiter='|', dtype=str, autostrip=True) #read the first column / labels
-    data = {label: row for label, row in zip(parameters[:,0], parameters[:,1:])}
-    for keys in data.keys():
-        data[keys] = np.concatenate((data[keys],[profile[keys]]))
-    newParameters = np.column_stack([np.array(data.keys()), np.array(data.values())])
-    np.savetxt(parent.profilePath, newParameters, delimiter='|', fmt="%s")
-    changeProfile(parent, profile['User'])
-
 def manageProfile(parent):
 
     startDialog = manageAllProfiles(parent)
@@ -81,7 +70,12 @@ def setDefaultProfile(parent, user):
             data['Default'][countDefault] = str(1)
         else:
             data['Default'][countDefault] = str(0)
-    newParameters = np.column_stack([np.array(data.keys()), np.array(data.values())])
+    keys = []
+    values = []
+    for key, value in data.items():
+        keys.append(key)
+        values.append(value)
+    newParameters = np.column_stack([np.array(keys), np.array(values)])
     np.savetxt(parent.profilePath, newParameters, delimiter='|', fmt="%s")
     return 'OK'
 
@@ -322,7 +316,12 @@ class manageAllProfiles(QDialog):
 
         temp = self.saveProfileTemp(finalSaving=1)
         if temp:
-            newParameters = np.column_stack([np.array(self.profileData.keys()), np.array(self.profileData.values())])
+            keys = []
+            values = []
+            for key, value in self.profileData.items():
+                keys.append(key)
+                values.append(value)
+            newParameters = np.column_stack([np.array(keys), np.array(values)])
             np.savetxt(self.profilePath, newParameters, delimiter='|', fmt="%s")
             infoBox = QMessageBox()
             infoBox.setWindowTitle("Info")

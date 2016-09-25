@@ -66,7 +66,7 @@ def generateData(parentWindow, progressBar):
     if result is None:
         return None
 
-    filenamelist = getDataFromFile([parentWindow.fileDataPath+'/filenamelist.dat'], 0, singleColumn=1) #0 is here to replace the Queue from Multiprocessing
+    filenamelist = getDataFromFile([parentWindow.fileDataPath+'/filenamelist.dat'], 0, singleColumn=1, delimiter=',') #0 is here to replace the Queue from Multiprocessing
     if filenamelist is None:
         return None
 
@@ -116,17 +116,17 @@ def generateData(parentWindow, progressBar):
     return [data_x, data_y, data_corr, data_stdx, data_stdy, disp_x, disp_y, filenamelist, nb_marker, nb_image, filterList, grid_instances, largeDisp]
 
 
-def testReadFile(filePath):
+def testReadFile(filePath, delimiter=''):
 
     #test if the file exist
     try:
-        readFile = np.genfromtxt(filePath, dtype=None)
+        readFile = np.genfromtxt(filePath, dtype=None, delimiter=delimiter)
     except:
         return None
     return readFile
 
 
-def getDataFromFile(filePath, q, pipe=None, singleColumn=0):
+def getDataFromFile(filePath, q, pipe=None, singleColumn=0, delimiter=''):
 
     fileResult = []
 
@@ -134,8 +134,7 @@ def getDataFromFile(filePath, q, pipe=None, singleColumn=0):
 
     for element in range(numFiles):
 
-
-        readFile = testReadFile(filePath[element])
+        readFile = testReadFile(filePath[element], delimiter)
 
         if readFile is None or readFile is filePath[element]:
             if q != 0:
@@ -145,21 +144,22 @@ def getDataFromFile(filePath, q, pipe=None, singleColumn=0):
             else:
                 return None
 
-        try:
-            rownum = 0
-            for row in readFile:
-                colnum = 0
-                if type(row) == np.ndarray:
-                    for col in row:
-                        colnum+=1
-                rownum+=1
-        except:
-            if q != 0:
-                q.put(0)
-                q.close()
-                return
-            else:
-                return None
+        if singleColumn == 0:
+            try:
+                rownum = 0
+                for row in readFile:
+                    colnum = 0
+                    if type(row) == np.ndarray:
+                        for col in row:
+                            colnum+=1
+                    rownum+=1
+            except:
+                if q != 0:
+                    q.put(0)
+                    q.close()
+                    return
+                else:
+                    return None
 
         if singleColumn < 1:
 
@@ -179,7 +179,10 @@ def getDataFromFile(filePath, q, pipe=None, singleColumn=0):
         else:
             data = []
             for row in readFile:
-                data.append(row)
+                if type(row) == np.bytes_:
+                    data.append(row.decode(encoding='utf-8'))
+                else:
+                    data.append(row)
 
         fileResult.append(data)
 

@@ -50,8 +50,8 @@ class analysisInfos(QDialog):
 
     def openInfos(self):
 
-        filePath =  self.parent.fileDataPath+'\infoAnalysis.dat'
-        filePathMarkers =  self.parent.fileDataPath+'\infoMarkers.dat'
+        filePath =  self.parent.fileDataPath+'/infoAnalysis.dat'
+        filePathMarkers =  self.parent.fileDataPath+'/infoMarkers.dat'
         self.infos = getData.getDataFromFile([filePath], 0, singleColumn=1) #None if not found
         # 0 Name, 1 Reference Mode, 2 CorrSize, 3 nbProcesses, 4 total processing time, 5 nbImages, 6 nbMarkers, 7 nbImages * nbMarkers, 8 largeDisp YES/NO, 9 Author
         self.markersInfos = getData.getDataFromFile([filePathMarkers], 0) #None if not found
