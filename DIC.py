@@ -66,6 +66,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle('Digital Image Correlation ('+USER+')')
         self.setMinimumWidth(WIDTH)
         self.setMinimumHeight(HEIGHT)
+        self.setContentsMargins(0,0,0,0)
 
         self.devWindow = devMode.DevMode(DEV_MODE)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.devWindow)

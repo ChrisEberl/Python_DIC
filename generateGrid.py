@@ -16,6 +16,8 @@ from PyQt4.QtGui import *
 
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+from matplotlib import rcParams
+rcParams.update({'figure.autolayout': True})
 from matplotlib.widgets import Cursor
 import cv2
 import matplotlib.figure
@@ -45,7 +47,6 @@ def createGrid(mainWindow): #start the generateGrid widget and put it in the mai
     gridWidget.topWidget.prepareTools(imageFileList)
 
 
-
 class generateGridWidget(QWidget):
 
     def __init__(self, parentWindow, imageFileList):  #initiate the generateGrid Widget
@@ -53,6 +54,7 @@ class generateGridWidget(QWidget):
         super(generateGridWidget, self).__init__()
 
         self.parentWindow = parentWindow
+        self.setContentsMargins(0,0,0,0)
         self.markerInstances = []
         self.imageFileList = imageFileList
         self.currentImage = []
@@ -60,15 +62,19 @@ class generateGridWidget(QWidget):
         self.imageActiveList = np.ones((len(self.imageFileList)))
 
         mainLayout = QVBoxLayout() #Setting vertical mainLayout
+        mainLayout.setSpacing(0)
+        mainLayout.setContentsMargins(0,0,0,0)
         mainLayout.setAlignment(Qt.AlignCenter)
 
         topWidgetContainer = QWidget()
         self.topWidgetStackedLayout = QStackedLayout()
+        self.topWidgetStackedLayout.setContentsMargins(0,0,0,0)
 
         self.topWidget = topToolsWidget(self) #Creating the top tools widget and adding it to the stackedLayout
 
         calculationWidget = QWidget()
         calculationLayout = QHBoxLayout()
+        calculationLayout.setContentsMargins(0,0,0,0)
         self.calculationBar = progressWidget.progressBarWidget(title='Starting Processes...') #progressBar widget stacked with topWidget and shown when starting the processCorrelation
         calculationLayout.addStretch(1)
         calculationLayout.addWidget(self.calculationBar)
@@ -81,6 +87,7 @@ class generateGridWidget(QWidget):
 
         mainBottomWidget = QWidget() #create bottom widget and horizontal layout
         self.mainBottomLayout = QHBoxLayout()
+        self.mainBottomLayout.setSpacing(0)
         self.mainBottomLayout.setContentsMargins(0,0,0,0)
 
         self.figureDisplayWidget = matplotlibWidget() #create matplotlib and filter widgets
@@ -97,9 +104,14 @@ class generateGridWidget(QWidget):
 
         mainLayout.addWidget(topWidgetContainer)
         mainLayout.addWidget(mainBottomWidget) #adding the bottom widget to the main vertical layout
-        mainLayout.addStretch(1)
 
         self.setLayout(mainLayout)
+
+
+    def resizeEvent(self, event):
+
+        self.topWidget.resizeCall()
+        self.filterToolWidget.resizeCall()
 
     def plotImage(self, filterPreview=None): #plot the image and detected contour if auto selection mode on
 
@@ -501,24 +513,27 @@ class topToolsWidget(QWidget): #contains the different tools to create the grid,
 
         self.parentWidget = parentWidget
         horizontalLayout = QHBoxLayout()
-        self.setMaximumHeight(150)
+        horizontalLayout.setContentsMargins(0,0,0,0)
+        horizontalLayout.setSpacing(0)
         self.largeDisp = None
         self.lastTime = 0 #variable used for time calculation
+        self.setContentsMargins(0,0,0,0)
 
         #LEFT PART OF THE TOOL WIDGET : Automatic Mode
 
         self.autoWidget = QWidget()
         autoLayout = QVBoxLayout()
-        autoLayout.setAlignment(Qt.AlignCenter)
         autoLayout.setContentsMargins(0,0,0,0)
 
         buttonsWidget = QWidget()
         buttonsLayout = QHBoxLayout()
         buttonsLayout.setContentsMargins(0,0,0,0)
-        self.autoButton = QPushButton('Auto Select.')
+        self.autoButton = QToolButton()
+        self.autoButton.setText('Auto Select')
         self.autoButton.setCheckable(True)
         self.autoButton.pressed.connect(lambda: self.buttonClicked(self.autoButton))
-        self.addGridButton = QPushButton('Add Grid')
+        self.addGridButton = QToolButton()
+        self.addGridButton.setText('Add Grid')
         self.addGridButton.setDisabled(True)
         self.addGridButton.clicked.connect(self.parentWidget.addGrid)
         buttonsLayout.addWidget(self.autoButton)
@@ -570,25 +585,37 @@ class topToolsWidget(QWidget): #contains the different tools to create the grid,
         #CENTER PART OF THE TOOL WIDGET : Tools + Parameters
 
         self.centerToolWidget = QWidget()
-        centerToolLayout = QHBoxLayout()
-        centerToolLayout.setAlignment(Qt.AlignCenter)
+        centerToolLayout = QVBoxLayout()
         centerToolLayout.setContentsMargins(0,0,0,0)
-
-
-        shapeWidget = QWidget()
-        shapeLayout = QVBoxLayout()
-        shapeLayout.setContentsMargins(0,0,0,0)
 
         middleButtonsWidget = QWidget()
         middleButtonsLayout = QHBoxLayout()
-        self.rectangleSelection = QPushButton('Rectangle')
+        middleButtonsLayout.setContentsMargins(0,0,0,0)
+        self.rectangleSelection = QToolButton()
+        self.rectangleSelection.setText('Rectangle')
         self.rectangleSelection.setCheckable(True)
         self.rectangleSelection.pressed.connect(lambda: self.buttonClicked(self.rectangleSelection))
-        self.ellipseSelection = QPushButton('Ellipse')
+        self.ellipseSelection = QToolButton()
+        self.ellipseSelection.setText('Ellipse')
         self.ellipseSelection.setCheckable(True)
         self.ellipseSelection.pressed.connect(lambda: self.buttonClicked(self.ellipseSelection))
+        self.addManualButton = QToolButton()
+        self.addManualButton.setText('+')
+        self.addManualButton.setCheckable(True)
+        self.addManualButton.pressed.connect(lambda: self.buttonClicked(self.addManualButton))
+        self.removeManualButton = QToolButton()
+        self.removeManualButton.setText('-')
+        self.removeManualButton.setCheckable(True)
+        self.removeManualButton.pressed.connect(lambda: self.buttonClicked(self.removeManualButton))
+        self.selectManualButton = QToolButton()
+        self.selectManualButton.setText('<>')
+        self.selectManualButton.setCheckable(True)
+        self.selectManualButton.pressed.connect(lambda: self.buttonClicked(self.selectManualButton))
         middleButtonsLayout.addWidget(self.rectangleSelection)
         middleButtonsLayout.addWidget(self.ellipseSelection)
+        middleButtonsLayout.addWidget(self.addManualButton)
+        middleButtonsLayout.addWidget(self.removeManualButton)
+        middleButtonsLayout.addWidget(self.selectManualButton)
         middleButtonsWidget.setLayout(middleButtonsLayout)
 
         gridSizeWidget = QWidget()
@@ -615,8 +642,8 @@ class topToolsWidget(QWidget): #contains the different tools to create the grid,
         shiftLbl_x.setAlignment(Qt.AlignCenter)
         self.shiftCorrY = QLabel('-')
         self.shiftCorrY.setAlignment(Qt.AlignCenter)
-        self.changeShiftButton = QPushButton('*')
-        self.changeShiftButton.setMaximumWidth(20)
+        self.changeShiftButton = QToolButton()
+        self.changeShiftButton.setText('*')
         self.changeShiftButton.clicked.connect(self.changeShift)
         shiftCorrectionLayout.addWidget(shiftLbl)
         shiftCorrectionLayout.addWidget(self.shiftCorrX)
@@ -626,57 +653,32 @@ class topToolsWidget(QWidget): #contains the different tools to create the grid,
         self.shiftCorrectionWidget.setLayout(shiftCorrectionLayout)
         self.shiftCorrectionWidget.setDisabled(True)
 
-        shapeLayout.addWidget(middleButtonsWidget)
-        shapeLayout.addWidget(gridSizeWidget)
-        shapeLayout.addWidget(self.shiftCorrectionWidget)
-        shapeWidget.setLayout(shapeLayout)
-
-
-        singleManualWidget = QWidget()
-        singleManualLayout = QVBoxLayout()
-        singleManualLayout.setAlignment(Qt.AlignCenter)
-        singleManualLayout.setContentsMargins(0,0,0,0)
-
-
-        self.selectManualButton = QPushButton('<>')
-        self.selectManualButton.setMaximumWidth(20)
-        self.selectManualButton.setCheckable(True)
-        self.selectManualButton.pressed.connect(lambda: self.buttonClicked(self.selectManualButton))
-        self.addManualButton = QPushButton('+')
-        self.addManualButton.setMaximumWidth(20)
-        self.addManualButton.setCheckable(True)
-        self.addManualButton.pressed.connect(lambda: self.buttonClicked(self.addManualButton))
-        self.removeManualButton = QPushButton('-')
-        self.removeManualButton.setMaximumWidth(20)
-        self.removeManualButton.setCheckable(True)
-        self.removeManualButton.pressed.connect(lambda: self.buttonClicked(self.removeManualButton))
-        singleManualLayout.addWidget(self.selectManualButton)
-        singleManualLayout.addWidget(self.addManualButton)
-        singleManualLayout.addWidget(self.removeManualButton)
-        singleManualWidget.setLayout(singleManualLayout)
-
-
-        centerToolLayout.addWidget(shapeWidget)
-        centerToolLayout.addWidget(singleManualWidget)
+        centerToolLayout.addWidget(middleButtonsWidget)
+        centerToolLayout.addWidget(gridSizeWidget)
+        centerToolLayout.addWidget(self.shiftCorrectionWidget)
 
         self.centerToolWidget.setLayout(centerToolLayout)
 
         #RIGHT PART OF THE TOOL WIDGET : Infos + Process
 
-        infosWidget = QWidget()
+        self.infosWidget = QWidget()
         infosLayout = QHBoxLayout()
         infosLayout.setAlignment(Qt.AlignCenter)
         infosLayout.setContentsMargins(0,0,0,0)
 
-
         labelWidget = QWidget()
         labelLayout = QVBoxLayout()
+        labelLayout.setAlignment(Qt.AlignHCenter)
         labelLayout.setContentsMargins(0,0,0,0)
 
         totalImagesLbl = QLabel('Total Images:')
+        totalImagesLbl.setAlignment(Qt.AlignCenter)
         totalMarkersLbl = QLabel('Total Markers:')
+        totalMarkersLbl.setAlignment(Qt.AlignCenter)
         corrsizeLbl = QLabel('CorrSize:')
+        corrsizeLbl.setAlignment(Qt.AlignCenter)
         currentImageLbl = QLabel('Image:')
+        currentImageLbl.setAlignment(Qt.AlignCenter)
 
         labelLayout.addWidget(totalImagesLbl)
         labelLayout.addWidget(totalMarkersLbl)
@@ -688,14 +690,13 @@ class topToolsWidget(QWidget): #contains the different tools to create the grid,
         valueWidget = QWidget()
         valueLayout = QVBoxLayout()
         valueLayout.setAlignment(Qt.AlignHCenter)
-        valueLayout.setContentsMargins(0,5,0,0)
+        valueLayout.setContentsMargins(0,0,0,0)
 
         self.totalImagesValue = QLabel('-')
         self.totalImagesValue.setAlignment(Qt.AlignCenter)
         self.totalMarkersValue = QLabel('-')
         self.totalMarkersValue.setAlignment(Qt.AlignCenter)
         self.corrsizeValue = QSpinBox()
-
 
         currentImageWidget = QWidget()
         currentImageLayout = QHBoxLayout()
@@ -709,7 +710,6 @@ class topToolsWidget(QWidget): #contains the different tools to create the grid,
         currentImageLayout.addWidget(self.imageActiveBox)
         currentImageWidget.setLayout(currentImageLayout)
 
-
         valueLayout.addWidget(self.totalImagesValue)
         valueLayout.addSpacing(10)
         valueLayout.addWidget(self.totalMarkersValue)
@@ -717,12 +717,10 @@ class topToolsWidget(QWidget): #contains the different tools to create the grid,
         valueLayout.addWidget(currentImageWidget)
         valueWidget.setLayout(valueLayout)
 
-
         processWidget = QWidget()
         processLayout = QVBoxLayout()
         processLayout.setAlignment(Qt.AlignCenter)
         processLayout.setContentsMargins(10,0,10,0)
-
 
         referenceLbl = QLabel('Reference')
         referenceLbl.setAlignment(Qt.AlignCenter)
@@ -758,28 +756,44 @@ class topToolsWidget(QWidget): #contains the different tools to create the grid,
         processLayout.addWidget(infosButtonsContainer)
         processWidget.setLayout(processLayout)
 
-        infosLayout.addWidget(labelWidget)
-        infosLayout.addWidget(valueWidget)
-        infosLayout.addWidget(processWidget)
-        infosWidget.setLayout(infosLayout)
+        infosLayout.addWidget(labelWidget, 1)
+        infosLayout.addWidget(valueWidget, 1)
+        infosLayout.addWidget(processWidget, 2)
+        self.infosWidget.setLayout(infosLayout)
 
+        self.firstSeparator = QFrame()
+        self.firstSeparator.setContentsMargins(0,0,0,0)
+        self.firstSeparator.setFrameShape(QFrame.VLine)
+        self.firstSeparator.setLineWidth(0)
+        self.secondSeparator = QFrame()
+        self.secondSeparator.setContentsMargins(0,0,0,0)
+        self.secondSeparator.setFrameShape(QFrame.VLine)
+        self.secondSeparator.setLineWidth(0)
 
-        firstSeparator = QFrame()
-        firstSeparator.setFrameShape(QFrame.VLine)
-        firstSeparator.setLineWidth(0)
-        secondSeparator = QFrame()
-        secondSeparator.setFrameShape(QFrame.VLine)
-        secondSeparator.setLineWidth(0)
-
-        horizontalLayout.addStretch(1)
         horizontalLayout.addWidget(self.autoWidget)
-        horizontalLayout.addWidget(firstSeparator)
+        horizontalLayout.addWidget(self.firstSeparator)
         horizontalLayout.addWidget(self.centerToolWidget)
-        horizontalLayout.addWidget(secondSeparator)
-        horizontalLayout.addWidget(infosWidget)
-        horizontalLayout.addStretch(1)
+        horizontalLayout.addWidget(self.secondSeparator)
+        horizontalLayout.addWidget(self.infosWidget)
 
         self.setLayout(horizontalLayout)
+
+    def resizeCall(self):
+
+        maxWidth = self.parentWidget.parentWindow.width()
+        maxHeight = self.parentWidget.parentWindow.height()
+        self.setFixedHeight(.25*maxHeight)
+        self.setFixedWidth(maxWidth)
+        #set dimensions
+        self.autoWidget.setFixedWidth(.2*maxWidth)
+        self.firstSeparator.setFixedWidth(.01*maxWidth)
+        self.centerToolWidget.setFixedWidth(.3*maxWidth)
+        self.secondSeparator.setFixedWidth(.01*maxWidth)
+        self.infosWidget.setFixedWidth(.48*maxWidth)
+        #set margins
+        self.autoWidget.setContentsMargins(.01*maxWidth,.01*maxWidth,.01*maxWidth,.01*maxWidth)
+        self.centerToolWidget.setContentsMargins(.01*maxWidth,.01*maxWidth,.01*maxWidth,.01*maxWidth)
+        self.infosWidget.setContentsMargins(.01*maxWidth,.01*maxWidth,.01*maxWidth,.01*maxWidth)
 
 
     def prepareTools(self, imageFileList): #initialize the main element boundaries and values

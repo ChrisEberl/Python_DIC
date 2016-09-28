@@ -17,6 +17,8 @@ from PyQt4.QtGui import *
 import numpy as np
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.figure
+from matplotlib import rcParams
+rcParams.update({'figure.autolayout': True})
 import cv2
 import getData
 
@@ -28,19 +30,15 @@ class filterCreationWidget(QWidget): # contains the main filter informations and
 
         super(filterCreationWidget, self).__init__()
 
-        self.setMinimumWidth(200)
-        self.setMaximumWidth(250)
         self.parent = parent
-        self.setContentsMargins(0,0,0,0)
 
         verticalLayout = QVBoxLayout()
         verticalLayout.setAlignment(Qt.AlignCenter)
         verticalLayout.setContentsMargins(0,0,0,0)
 
-        filterListLbl = QLabel('Filters')
+        self.filterListLbl = QLabel('Filters')
 
         self.availableFilters = QListWidget()
-        self.availableFilters.setMinimumHeight(50)
 
         #filterlist
         self.filterList = [['Zoom','Width','Height','Top-Left Coord.',200,100,'0,0'],['Blur','Kernel Width','Kernel Height','',5,5,0],['Gaussian','Kernel Width','Kernel Height','Standard Dev.',9,9,'0,0'],['Brightness','Phi','Theta','Degree',1,1,'2'],['Darkness','Phi','Theta','Degree',1,1,'2'],['Contrast','Phi','Theta','Degree',1,1,'2']]
@@ -65,20 +63,19 @@ class filterCreationWidget(QWidget): # contains the main filter informations and
         filterParameterValueLayout.setContentsMargins(0,0,0,0)
         self.parameterValues = [QSpinBox(), QSpinBox(), QLineEdit()]
         for values in self.parameterValues:
-            values.setMaximumWidth(50)
             filterParameterValueLayout.addWidget(values)
         filterParameterLayout.addLayout(filterParameterLblLayout)
         filterParameterLayout.addLayout(filterParameterValueLayout)
 
         saveButtonLayout = QHBoxLayout()
         saveButtonLayout.setContentsMargins(0,0,0,0)
-        self.previewButton = QPushButton('Preview')
-        self.previewButton.setMaximumWidth(50)
+        self.previewButton = QToolButton()
+        self.previewButton.setText('Preview')
         self.previewButton.setDisabled(True)
         self.previewButton.mousePressEvent = lambda x: self.parent.plotImage(filterPreview=[self.availableFilters.currentItem().text(), self.parameterValues[0].value(), self.parameterValues[1].value(), self.parameterValues[2].text()])
         self.previewButton.mouseReleaseEvent = lambda x: self.parent.plotImage()
-        self.saveButton = QPushButton('Apply Filter')
-        self.saveButton.setMaximumWidth(80)
+        self.saveButton = QToolButton()
+        self.saveButton.setText('Apply Filter')
         self.saveButton.setDisabled(True)
         self.saveButton.clicked.connect(self.addFilterToApply)
         saveButtonLayout.addStretch(1)
@@ -86,17 +83,16 @@ class filterCreationWidget(QWidget): # contains the main filter informations and
         saveButtonLayout.addWidget(self.saveButton)
         saveButtonLayout.addStretch(1)
 
-        appliedFiltersLbl = QLabel('Applied Filter(s)')
+        self.appliedFiltersLbl = QLabel('Applied Filter(s)')
 
         self.appliedFilters = QListWidget()
-        self.appliedFilters.setMinimumHeight(50)
         self.appliedFiltersList = []
 
         deleteButtonLayout = QHBoxLayout()
         deleteButtonLayout.setContentsMargins(0,0,0,0)
-        self.deleteButton = QPushButton('Delete Selection')
+        self.deleteButton = QToolButton()
+        self.deleteButton.setText('Delete Selection')
         self.deleteButton.setContentsMargins(0,0,0,0)
-        self.deleteButton.setMaximumWidth(100)
         self.deleteButton.setDisabled(True)
         self.deleteButton.clicked.connect(self.deleteAppliedFilter)
         deleteButtonLayout.addStretch(1)
@@ -105,19 +101,30 @@ class filterCreationWidget(QWidget): # contains the main filter informations and
 
         self.histoPlot = matplotlibWidget()
         self.histoPlot.setContentsMargins(0,0,0,0)
-        self.histoPlot.setMinimumHeight(60)
-        self.histoPlot.setMaximumHeight(200)
 
-        verticalLayout.addWidget(filterListLbl)
+        verticalLayout.addWidget(self.filterListLbl)
         verticalLayout.addWidget(self.availableFilters)
         verticalLayout.addLayout(filterParameterLayout)
         verticalLayout.addLayout(saveButtonLayout)
-        verticalLayout.addWidget(appliedFiltersLbl)
+        verticalLayout.addWidget(self.appliedFiltersLbl)
         verticalLayout.addWidget(self.appliedFilters)
         verticalLayout.addLayout(deleteButtonLayout)
         verticalLayout.addWidget(self.histoPlot)
 
         self.setLayout(verticalLayout)
+
+    def resizeCall(self):
+
+        maxWidth = self.parent.parentWindow.width()
+        maxHeight = self.parent.parentWindow.height()
+        self.setContentsMargins(0.01*maxWidth,0,0.01*maxWidth,0.05*maxHeight)
+        self.setFixedHeight(0.75*maxHeight)
+        self.setFixedWidth(0.25*maxWidth)
+        self.filterListLbl.setFixedHeight(.03*maxHeight)
+        self.availableFilters.setFixedHeight(.1*maxHeight)
+        self.appliedFiltersLbl.setFixedHeight(.03*maxHeight)
+        self.appliedFilters.setFixedHeight(.1*maxHeight)
+        self.histoPlot.setFixedHeight(.15*maxHeight)
 
     def itemSelected(self):
 
@@ -139,6 +146,7 @@ class filterCreationWidget(QWidget): # contains the main filter informations and
                     else:
                         self.parameterValues[parameter].setDisabled(True)
                         self.parameterLbls[parameter].setText('-')
+
 
     def addFilterToApply(self):
 
@@ -279,8 +287,9 @@ class matplotlibWidget(FigureCanvas):  #widget to plot image and points inside t
 
     def __init__(self):
         super(matplotlibWidget,self).__init__(matplotlib.figure.Figure())
+        self.setContentsMargins(0,0,0,0)
         self.figure = matplotlib.figure.Figure()
         self.figure.set_facecolor('none')
         self.canvas = FigureCanvas(self.figure)
         self.plot = self.figure.add_subplot(111)
-        #self.figure.tight_layout()
+        self.figure.tight_layout()
