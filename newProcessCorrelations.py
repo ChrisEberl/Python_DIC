@@ -101,32 +101,32 @@ def prepareCorrelations(fileNameList, gridX, gridY, corrsize, baseMode, floatSte
 
     #data saving
     parentWidget.calculationBar.percent = 0
-    parentWidget.calculationBar.currentTitle = 'Saving validx.dat...'
-    Save('validx.dat', result[0], parentWindow.fileDataPath)
+    parentWidget.calculationBar.currentTitle = 'Saving validx.csv...'
+    Save('validx', result[0], parentWindow.fileDataPath)
     parentWidget.calculationBar.percent = 10
-    parentWidget.calculationBar.currentTitle = 'Saving validy.dat...'
-    Save('validy.dat', result[1], parentWindow.fileDataPath)
+    parentWidget.calculationBar.currentTitle = 'Saving validy.csv...'
+    Save('validy', result[1], parentWindow.fileDataPath)
     parentWidget.calculationBar.percent = 20
-    parentWidget.calculationBar.currentTitle = 'Saving stdx.dat...'
-    Save('stdx.dat', result[3], parentWindow.fileDataPath)
+    parentWidget.calculationBar.currentTitle = 'Saving stdx.csv...'
+    Save('stdx', result[3], parentWindow.fileDataPath)
     parentWidget.calculationBar.percent = 30
-    parentWidget.calculationBar.currentTitle = 'Saving stdy.dat...'
-    Save('stdy.dat', result[4], parentWindow.fileDataPath)
+    parentWidget.calculationBar.currentTitle = 'Saving stdy.csv...'
+    Save('stdy', result[4], parentWindow.fileDataPath)
     parentWidget.calculationBar.percent = 40
-    parentWidget.calculationBar.currentTitle = 'Saving corrcoef.dat...'
-    Save('corrcoef.dat', result[2], parentWindow.fileDataPath)
+    parentWidget.calculationBar.currentTitle = 'Saving corrcoef.csv...'
+    Save('corrcoef', result[2], parentWindow.fileDataPath)
     parentWidget.calculationBar.percent = 50
-    parentWidget.calculationBar.currentTitle = 'Saving dispx.dat...'
-    Save('dispx.dat', result[5], parentWindow.fileDataPath)
+    parentWidget.calculationBar.currentTitle = 'Saving dispx.csv...'
+    Save('dispx', result[5], parentWindow.fileDataPath)
     parentWidget.calculationBar.percent = 60
-    parentWidget.calculationBar.currentTitle = 'Saving dispy.dat...'
-    Save('dispy.dat', result[6], parentWindow.fileDataPath)
+    parentWidget.calculationBar.currentTitle = 'Saving dispy.csv...'
+    Save('dispy', result[6], parentWindow.fileDataPath)
     parentWidget.calculationBar.percent = 70
-    parentWidget.calculationBar.currentTitle = 'Saving filenamelist.dat...'
-    Save('filenamelist.dat', fileNameList, parentWindow.fileDataPath)
+    parentWidget.calculationBar.currentTitle = 'Saving filenamelist.csv...'
+    Save('filenamelist', fileNameList, parentWindow.fileDataPath)
     parentWidget.calculationBar.percent = 80
-    parentWidget.calculationBar.currentTitle = 'Saving infoMarkers.dat...'
-    Save('infoMarkers.dat', result[7].astype(int), parentWindow.fileDataPath)
+    parentWidget.calculationBar.currentTitle = 'Saving infoMarkers.csv...'
+    Save('infoMarkers', result[7].astype(int), parentWindow.fileDataPath)
     if len(filterInfos) > 0:
         filterWidget.saveOpenFilter(parentWindow.fileDataPath, filterList=filterInfos)
 
@@ -145,12 +145,12 @@ def prepareCorrelations(fileNameList, gridX, gridY, corrsize, baseMode, floatSte
     infosAnalysis.append(str(parentWindow.profileData['User'][parentWindow.currentProfile]))
 
     parentWidget.calculationBar.percent = 90
-    parentWidget.calculationBar.currentTitle = 'Saving infoAnalysis.dat...'
-    Save('infoAnalysis.dat', np.array(infosAnalysis), parentWindow.fileDataPath)
+    parentWidget.calculationBar.currentTitle = 'Saving infoAnalysis.csv...'
+    Save('infoAnalysis', np.array(infosAnalysis), parentWindow.fileDataPath)
     if isLargeDisp:
         parentWidget.calculationBar.percent = 95
-        parentWidget.calculationBar.currentTitle = 'Saving largeDisp.dat...'
-        Save('largeDisp.dat', largeDisp, parentWindow.fileDataPath)
+        parentWidget.calculationBar.currentTitle = 'Saving largeDisp.csv...'
+        Save('largeDisp', largeDisp, parentWindow.fileDataPath)
 
     parentWindow.devWindow.addInfo('Processing Time : '+str(totalTime))
     infosThread.emit([1])
@@ -334,9 +334,9 @@ def CollectDataFunc(InputCorrX,InputCorrY,StdX,StdY,CorrCoef):
     stdYCurrent = StdY
     return validXCurrent, validYCurrent, stdXCurrent, stdYCurrent, corrCoefCurrent
 
-def Save(FileName, Data, filePath):
+def Save(FileName, Data, filePath, extension='csv'):
 
-    np.savetxt(filePath+'/'+FileName, Data, fmt="%s")
+    np.savetxt(filePath+'/'+FileName+'.'+extension, Data, fmt="%s", delimiter=',')
 
 
 def shiftDetection(filePath, imageList, activeImages, area, filterList, thread):

@@ -44,7 +44,7 @@ def generateData(parentWindow, progressBar):
     tic = time.time()
 
     # files to load (Must be all the same type = m x n matrices - Do not use the fileNameList)
-    dataToLoad = [parentWindow.fileDataPath+'/validx.dat', parentWindow.fileDataPath+'/validy.dat', parentWindow.fileDataPath+'/corrcoef.dat', parentWindow.fileDataPath+'/stdx.dat', parentWindow.fileDataPath+'/stdy.dat', parentWindow.fileDataPath+'/dispx.dat', parentWindow.fileDataPath+'/dispy.dat']
+    dataToLoad = [parentWindow.fileDataPath+'/validx.csv', parentWindow.fileDataPath+'/validy.csv', parentWindow.fileDataPath+'/corrcoef.csv', parentWindow.fileDataPath+'/stdx.csv', parentWindow.fileDataPath+'/stdy.csv', parentWindow.fileDataPath+'/dispx.csv', parentWindow.fileDataPath+'/dispy.csv']
 
 
     args = []
@@ -66,11 +66,11 @@ def generateData(parentWindow, progressBar):
     if result is None:
         return None
 
-    filenamelist = getDataFromFile([parentWindow.fileDataPath+'/filenamelist.dat'], 0, singleColumn=1, delimiter=',') #0 is here to replace the Queue from Multiprocessing
+    filenamelist = getDataFromFile([parentWindow.fileDataPath+'/filenamelist.csv'], 0, singleColumn=1) #0 is here to replace the Queue from Multiprocessing
     if filenamelist is None:
         return None
 
-    grid_entities = getDataFromFile([parentWindow.fileDataPath+'/gridx.dat'], 0, singleColumn=1)
+    grid_entities = getDataFromFile([parentWindow.fileDataPath+'/gridx.csv'], 0, singleColumn=1)
 
     if grid_entities is None:
         return None
@@ -84,7 +84,7 @@ def generateData(parentWindow, progressBar):
     filterList = filterWidget.saveOpenFilter(parentWindow.fileDataPath)
     nbImages = len(filenamelist)
 
-    largeDisp = getDataFromFile([parentWindow.fileDataPath+'/largeDisp.dat'], 0, singleColumn=1)
+    largeDisp = getDataFromFile([parentWindow.fileDataPath+'/largeDisp.csv'], 0, singleColumn=1)
 
 
     data_x = result[:,0:nbImages]
@@ -116,17 +116,17 @@ def generateData(parentWindow, progressBar):
     return [data_x, data_y, data_corr, data_stdx, data_stdy, disp_x, disp_y, filenamelist, nb_marker, nb_image, filterList, grid_instances, largeDisp]
 
 
-def testReadFile(filePath, delimiter=''):
+def testReadFile(filePath):
 
     #test if the file exist
     try:
-        readFile = np.genfromtxt(filePath, dtype=None, delimiter=delimiter)
+        readFile = np.genfromtxt(filePath, dtype=None, delimiter=',')
     except:
         return None
     return readFile
 
 
-def getDataFromFile(filePath, q, pipe=None, singleColumn=0, delimiter=''):
+def getDataFromFile(filePath, q, pipe=None, singleColumn=0):
 
     fileResult = []
 
@@ -134,7 +134,7 @@ def getDataFromFile(filePath, q, pipe=None, singleColumn=0, delimiter=''):
 
     for element in range(numFiles):
 
-        readFile = testReadFile(filePath[element], delimiter)
+        readFile = testReadFile(filePath[element])
 
         if readFile is None or readFile is filePath[element]:
             if q != 0:

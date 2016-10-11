@@ -52,7 +52,7 @@ class progressBarWidget(QWidget): #Called for every time consuming operation / E
 
         self.setLayout(self.layout)
 
-        self.initTime = time.time()
+        self.initTime = 0
         self.percent = 0
         self.lastPercent = 0
         self.currentTitle = title
@@ -65,18 +65,20 @@ class progressBarWidget(QWidget): #Called for every time consuming operation / E
     def changeValue(self):
 
         percent = self.percent
+        if self.initTime == 0:
+            self.initTime = time.time()
         if self.currentTitle != self.lastTitle:
             self.progressTitle.setText(self.currentTitle)
         if percent != self.lastPercent:
             self.progressBar.setValue(percent)
             remainingTime = (time.time() - self.initTime)*(100-percent)/percent
-            if remainingTime > 60:
+            if remainingTime >= 60:
                 remainingTime = remainingTime / 60
                 if remainingTime - int(remainingTime) > 0.5:
-                    self.timeValue.setText(str(int(remainingTime))+ ' minutes')
+                    self.timeValue.setText(str(int(remainingTime+1))+ ' minutes')
                 else:
                     self.timeValue.setText(str(int(remainingTime))+ ' minutes and 30 secondes')
-            elif remainingTime > 30:
+            elif remainingTime > 30 and remainingTime < 60:
                 self.timeValue.setText('< 1 minute')
             else:
                 self.timeValue.setText(str(int(remainingTime))+ ' secondes.')

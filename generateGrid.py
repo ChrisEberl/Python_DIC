@@ -970,8 +970,8 @@ class topToolsWidget(QWidget): #contains the different tools to create the grid,
         gridX = np.transpose(np.vstack((gridX, entityX)))
         gridY = np.transpose(np.vstack((gridY, entityY)))
         #saving gridx and gridy files
-        np.savetxt(self.parentWidget.parentWindow.fileDataPath+'/gridx.dat', gridX, fmt='%6f %1d')
-        np.savetxt(self.parentWidget.parentWindow.fileDataPath+'/gridy.dat', gridY, fmt='%6f %1d')
+        np.savetxt(self.parentWidget.parentWindow.fileDataPath+'/gridx.csv', gridX, fmt='%s', delimiter=',')
+        np.savetxt(self.parentWidget.parentWindow.fileDataPath+'/gridy.csv', gridY, fmt='%s', delimiter=',')
 
         #Launch Process
         calculatingThread = self.parentWidget.parentWindow.createThread([self.parentWidget.imageFileList[0:self.nbImagesToProcess], gridX[:,0], gridY[:,0], self.corrsizeValue.value(), baseMode, floatStep, self.parentWidget, self.parentWidget.parentWindow, self.largeDisp, self.parentWidget.filterToolWidget.appliedFiltersList], newProcessCorrelations.prepareCorrelations, signal=1)
