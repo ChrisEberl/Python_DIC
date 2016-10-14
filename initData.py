@@ -72,7 +72,7 @@ def initPlottedData(parent, progressBar, currentMask, thread):
     #getting markers neighborhood
     fileDataPath = parent.parentWindow.fileDataPath
     if parent.neighbors is None:
-        neighbors = np.genfromtxt(fileDataPath+'/neighbors.dat')
+        neighbors = np.genfromtxt(fileDataPath+'/neighbors.csv', delimiter=',')
         parent.neighbors = neighbors
     else:
         neighbors = parent.neighbors
@@ -109,8 +109,8 @@ def initPlottedData(parent, progressBar, currentMask, thread):
     parent.localStrainIntersectY = localStrainIntersectY
 
     #saving 1D strain
-    np.savetxt(parent.parentWindow.fileDataPath+'/strainx.dat', StrainX)
-    np.savetxt(parent.parentWindow.fileDataPath+'/strainy.dat', StrainY)
+    np.savetxt(parent.parentWindow.fileDataPath+'/strainx.csv', StrainX, delimiter=',')
+    np.savetxt(parent.parentWindow.fileDataPath+'/strainy.csv', StrainY, delimiter=',')
     parent.strainX_data = StrainX
     parent.strainY_data = StrainY
 
@@ -300,7 +300,7 @@ def calculateNeighbors(activeMarkers, data_x_init, data_y_init, minNeighbors, fi
         currentNeighbors = len(np.atleast_1d(markerNeighbors[marker]))
         neighbors[marker, :currentNeighbors] = markerNeighbors[marker]
         neighbors[marker, currentNeighbors:maxNeighbors] = np.nan
-    np.savetxt(fileDataPath+'/neighbors.dat', neighbors, fmt='%1.0f')
+    np.savetxt(fileDataPath+'/neighbors.csv', neighbors, fmt='%1.0f', delimiter=',')
     return neighbors
 
 
