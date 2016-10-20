@@ -15,11 +15,10 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-import numpy as np
+import numpy as np, copy
 from matplotlib import patches
-import masks
-import progressWidget
-import copy
+from functions import masks
+from interface import progressWidget
 
 
 class dispVsPosDialog(QDialog):

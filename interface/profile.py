@@ -12,10 +12,7 @@ Current File: This file manages the profile dialog and profile functions
 """
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
-
-import numpy as np
-import sys
-import os
+import numpy as np, sys, os
 import DIC
 
 def readProfile(filePath, default=None):

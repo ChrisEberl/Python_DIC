@@ -11,18 +11,11 @@ More details regarding the project on the GitHub Wiki : https://github.com/Chris
 Current File: This file manages the initiation and update of 2D plots
 """
 
-import matplotlib.pyplot as plt
-import numpy as np
+import matplotlib.pyplot as plt, matplotlib.mlab as ml, matplotlib.colors as mplc, cv2, scipy, numpy as np
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-import matplotlib.mlab as ml
 from matplotlib.pyplot import clabel
-import matplotlib.colors as mplc
-import cv2
-import scipy
 from scipy.interpolate import griddata
-import masks
-import filterWidget
-
+from functions import masks
 
 ##############################
 ## DISPLACEMENT / DEVIATION ##

@@ -14,8 +14,8 @@ Current File: This file manages the grid instances dialog
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 import numpy as np
-import masks
-import progressWidget
+from interface import progressWidget
+from functions import masks
 
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure

@@ -11,15 +11,11 @@ More details regarding the project on the GitHub Wiki : https://github.com/Chris
 Current File: This file manages the opened data and initiate variables content along with strain and marker neighbors calculation
 """
 
-
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-import numpy as np
-import scipy
-import time
-import progressWidget
-import dockWidget
-
+import numpy as np, scipy, time
+from functions import DIC_Global
+from interface import progressWidget, dockWidget
 
 def initPlottedData(parent, progressBar, currentMask, thread):
 
@@ -141,7 +137,7 @@ def initPlottedData(parent, progressBar, currentMask, thread):
                 end = int((i+1)*nbImageCore)
             args.append((start,end, data_x[:, activeImages[start:end]], data_y[:, activeImages[start:end]], disp_x[:, activeImages[start:end]], disp_y[:, activeImages[start:end]], parent.data_corr[:, activeImages[start:end]], parent.xi, parent.yi, activeImages, gridInstances, activeInstances, neighbors, data_x_init, data_y_init))
 
-        result = parent.parentWindow.createProcess(calculateCoordinates, args, PROCESSES, progressBar, 'Calculating missing coordinates ...')
+        result = DIC_Global.createProcess(parent.parentWindow, calculateCoordinates, args, PROCESSES, progressBar, 'Calculating missing coordinates ...')
 
     else:
         result = calculateCoordinates(0, nbActiveImages, data_x, data_y, disp_x, disp_y, parent.data_corr, parent.xi, parent.yi, activeImages, gridInstances, activeInstances, neighbors, None, None)

@@ -13,16 +13,8 @@ Current File: This file manages the analysis info dialog
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-import numpy as np
-import plot3D
-import plot2D
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
-from matplotlib.figure import Figure
-import time
-import getData
-import masks
-
+import numpy as np, matplotlib as mpl, time
+from functions import plot2D, plot3D, getData, masks, DIC_Global
 
 def launchDialog(parent):
 
@@ -213,7 +205,7 @@ class analysisInfos(QDialog):
 
         matplotlibLayout = QHBoxLayout()
         matplotlibLayout.setContentsMargins(0,0,0,0)
-        self.matplotlibPlot = matplotlibWidget()
+        self.matplotlibPlot = DIC_Global.matplotlibWidget()
         self.matplotlibPlot.setContentsMargins(0,0,0,0)
         matplotlibLayout.addStretch(1)
         matplotlibLayout.addWidget(self.matplotlibPlot)
@@ -244,7 +236,7 @@ class analysisInfos(QDialog):
 
     def plotInfos(self, option):
 
-        self.matplotlibPlot.plot.cla()
+        self.matplotlibPlot.matPlot.cla()
         plotType = self.plotListBox.currentIndex()
         onlyActives = self.plotListCheckBox.isChecked()
         activeImages = self.parent.analysisWidget.activeImages
@@ -294,29 +286,13 @@ class analysisInfos(QDialog):
             #errorList = np.array(errorList)
             nbList = len(np.atleast_1d(errorList))
             if nbList:
-                self.matplotlibPlot.plot.hist(errorList, totalImages+1, range=(0, totalImages+1), align='right', histtype='bar', stacked=True, label=legend)
+                self.matplotlibPlot.matPlot.hist(errorList, totalImages+1, range=(0, totalImages+1), align='right', histtype='bar', stacked=True, label=legend)
                 if onlyActives is False:
-                    self.matplotlibPlot.plot.plot(activeImages+np.ones_like(activeImages), np.zeros_like(activeImages), 'o', c='red')
-                self.matplotlibPlot.plot.set_xlim([0.5,totalImages+0.5])
-                self.matplotlibPlot.plot.set_ylim(bottom=0)
+                    self.matplotlibPlot.matPlot.plot(activeImages+np.ones_like(activeImages), np.zeros_like(activeImages), 'o', c='red')
+                self.matplotlibPlot.matPlot.set_xlim([0.5,totalImages+0.5])
+                self.matplotlibPlot.matPlot.set_ylim(bottom=0)
             else:
-                ax = self.matplotlibPlot.plot
+                ax = self.matplotlibPlot.matPlot
                 ax.text(.5, .5, 'No error.', ha='center', va='center', transform = ax.transAxes, color='red')
 
-
         self.matplotlibPlot.draw_idle()
-
-
-
-class matplotlibWidget(FigureCanvas):
-
-    def __init__(self):
-
-        self.figure = Figure()
-        super(matplotlibWidget,self).__init__(self.figure)
-
-        self.figure.set_facecolor('none')
-        self.canvas = FigureCanvas(self.figure)
-
-        self.plot = self.figure.add_subplot(111)
-        self.figure.tight_layout()

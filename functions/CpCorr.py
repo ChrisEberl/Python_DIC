@@ -13,9 +13,7 @@ More details regarding the project on the GitHub Wiki : https://github.com/Chris
 Current File: This file has been translated, adapted and further developed from 'Digital Image Correlation and Tracking' for Matlab exchanged by Melanie Senn on Mathworks
 """
 
-import numpy as np
-from scipy import interpolate
-import cv2
+import numpy as np, cv2, scipy.interpolate
 
 def cpcorr(InputPoints,BasePoints,Input,Base, CORRSIZE):
 

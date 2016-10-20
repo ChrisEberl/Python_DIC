@@ -8,21 +8,13 @@ Created on 19/07/2016
 Please report issues and request on the GitHub project from ChrisEberl (Python_DIC)
 More details regarding the project on the GitHub Wiki : https://github.com/ChrisEberl/Python_DIC/wiki
 
-Current File: This file manages the filter functions available in the grid creation tool
+Current File: This file manages the filter widget available in the grid creation tool
 """
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-
-import numpy as np
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-import matplotlib.figure
-from matplotlib import rcParams
-rcParams.update({'figure.autolayout': True})
-import cv2
-import getData
-
-
+import numpy as np, cv2
+from functions import DIC_Global, filterFunctions, getData
 
 class filterCreationWidget(QWidget): # contains the main filter informations and allow user to apply filter to the set of images
 
@@ -99,8 +91,7 @@ class filterCreationWidget(QWidget): # contains the main filter informations and
         deleteButtonLayout.addWidget(self.deleteButton)
         deleteButtonLayout.addStretch(1)
 
-        self.histoPlot = matplotlibWidget()
-        self.histoPlot.setContentsMargins(0,0,0,0)
+        self.histoPlot = DIC_Global.matplotlibWidget()
 
         verticalLayout.addWidget(self.filterListLbl)
         verticalLayout.addWidget(self.availableFilters)
@@ -193,103 +184,3 @@ class filterCreationWidget(QWidget): # contains the main filter informations and
         else:
             self.deleteButton.setDisabled(True)
         self.parent.plotImage()
-
-
-
-def applyFilterListToImage(filterList, image):
-
-    if filterList is not None:
-        nbFilters = len(np.atleast_1d(filterList))
-        if nbFilters > 0:
-            for currentFilter in np.atleast_1d(filterList):
-                filterName = currentFilter[1]
-                filterParameters = [currentFilter[2], currentFilter[3], currentFilter[4]]
-                image = applyFilterToImage(filterName, filterParameters, image)
-
-    return image
-
-def applyFilterToImage(filterName, filterParameters, image):
-
-    backupImage = image
-    if filterName == 'Zoom':
-
-        try:
-            minY = int(filterParameters[2].split(',')[0])
-            maxY = minY + int(filterParameters[0])
-            minX = int(filterParameters[2].split(',')[1])
-            maxX = minX + int(filterParameters[1])
-            image = image[minX:maxX, minY:maxY]
-        except:
-            image = backupImage
-
-    elif filterName == 'Blur':
-
-        image = cv2.blur(image, (int(filterParameters[0]), int(filterParameters[1])))
-
-    elif filterName == 'Gaussian':
-
-        try:
-            image = cv2.GaussianBlur(image, (int(filterParameters[0]), int(filterParameters[1])), int(filterParameters[2].split(',')[0]), int(filterParameters[2].split(',')[1]))
-        except:
-            image = backupImage
-
-    elif filterName == 'Brightness':
-
-        maxValue = np.max(image)
-        phi = float(filterParameters[0])/100
-        theta = float(filterParameters[1])/100
-        degree = float(filterParameters[2])
-        image = image.astype(np.float_)
-        image = maxValue*(1+theta)*(image/maxValue/(1-phi))**(1/degree)
-        image[image > 255] = 255
-        image[image < 0] = 0
-        image = image.astype(np.uint8)
-
-    elif filterName == 'Darkness':
-
-        maxValue = np.max(image)
-        phi = float(filterParameters[0])/100
-        theta = float(filterParameters[1])/100
-        degree = float(filterParameters[2])
-        image = image.astype(np.float_)
-        image = maxValue*(1-theta)*(image/maxValue/(1+phi))**(degree)
-        image[image > 255] = 255
-        image[image < 0] = 0
-        image = image.astype(np.uint8)
-
-    elif filterName == 'Contrast':
-
-        maxValue = np.max(image)
-        phi = float(filterParameters[0])/100
-        theta = float(filterParameters[1])/100
-        degree = float(filterParameters[2])
-        medium = (float(maxValue)+np.min(image))/2
-        image = image.astype(np.float_)
-        image[image > medium] = medium*(1+theta)*(image[image > medium]/medium/(1-phi))**(1/degree)
-        image[image < medium] = medium*(1-theta)*(image[image < medium]/medium/(1+phi))**(degree)
-        image[image > 255] = 255
-        image[image < 0] = 0
-        image = image.astype(np.uint8)
-
-    return image
-
-def saveOpenFilter(filePath, filterList=None):
-
-    filterFileName = '/filter.dat'
-    if filterList is None: #we want to open the filterFileName file
-        filterList = getData.testReadFile(filePath+filterFileName)
-        return filterList
-    else:
-        np.savetxt(filePath+filterFileName, np.array(filterList), fmt="%s")
-
-
-class matplotlibWidget(FigureCanvas):  #widget to plot image and points inside the dialog and not on a separate window
-
-    def __init__(self):
-        super(matplotlibWidget,self).__init__(matplotlib.figure.Figure())
-        self.setContentsMargins(0,0,0,0)
-        self.figure = matplotlib.figure.Figure()
-        self.figure.set_facecolor('none')
-        self.canvas = FigureCanvas(self.figure)
-        self.plot = self.figure.add_subplot(111)
-        self.figure.tight_layout()

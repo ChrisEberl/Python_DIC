@@ -16,7 +16,7 @@ from PyQt4.QtCore import *
 
 class DevMode(QDockWidget): #dockWidget used in DevMode to display more informations to the developer
 
-    def __init__(self, Mode):
+    def __init__(self, parent, Mode):
 
         super(DevMode, self).__init__()
 
@@ -39,6 +39,8 @@ class DevMode(QDockWidget): #dockWidget used in DevMode to display more informat
             self.addInfo('Application started.')
         else:
             self.setHidden(True)
+
+        parent.addDockWidget(Qt.BottomDockWidgetArea, self)
 
     def ResizeScroll(self, min, maxi): #auto-scroll down function for DevMode
         self.devInfo.verticalScrollBar().setValue(maxi)

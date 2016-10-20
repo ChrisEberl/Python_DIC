@@ -16,13 +16,10 @@ from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as Navigatio
 from matplotlib.figure import Figure
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-import numpy as np
-import cv2
+import numpy as np, cv2, copy
 from matplotlib import patches
-import filterWidget
-import masks
-import progressWidget
-import copy
+from functions import filterFunctions, masks
+from interface import progressWidget
 
 class deleteMarkersDialog(QDialog):
 
@@ -113,7 +110,7 @@ class deleteMarkersDialog(QDialog):
 
         value = self.activeImages[self.imageSelectSpinBox.value()-1]
         readImage = cv2.imread(self.filePath+'/'+self.filenamelist[value],0)
-        readImage = filterWidget.applyFilterListToImage(self.filterList, readImage)
+        readImage = filterFunctions.applyFilterListToImage(self.filterList, readImage)
 
         data_x_init = self.data_x[:, self.activeImages[0]]
         data_y_init = self.data_y[:, self.activeImages[0]]

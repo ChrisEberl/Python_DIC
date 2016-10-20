@@ -15,19 +15,12 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-import numpy as np
-import getData
-import time
-import os
-import csv
-import cv2
+import numpy as np, cv2, os, csv, scipy.optimize, copy, time
+from functions import getData, masks, DIC_Global
+from interface import progressWidget
 from math import sqrt
 from matplotlib import path as mpath
 from matplotlib import ticker
-from scipy import optimize
-import masks
-import progressWidget
-import copy
 import matplotlib.pyplot as plt
 
 
@@ -287,7 +280,7 @@ class RelativeNDialog(QDialog):
         if startUp > 0:
 
             self.progressBarDialog = progressWidget.progressBarDialog('Calculation started.')
-            self.neighborsThread = self.parent.parentWindow.createThread([self.parent.disp_x, self.parent.disp_y, self.parent.activeImages, self.activeMarkers, self.parent.activeInstances, self.parent.grid_instances, self.parent.neighbors], calculateOutsiders, signal=1)
+            self.neighborsThread = DIC_Global.createThread(self.parent.parentWindow, [self.parent.disp_x, self.parent.disp_y, self.parent.activeImages, self.activeMarkers, self.parent.activeInstances, self.parent.grid_instances, self.parent.neighbors], calculateOutsiders, signal=1)
             self.neighborsThread.signal.threadSignal.connect(self.getResults)
             self.neighborsThread.start()
 
@@ -303,7 +296,7 @@ class RelativeNDialog(QDialog):
                 relativeY = self.relativeY
 
             #create Thread for calculations
-            self.neighborsThread = self.parent.parentWindow.createThread([self.parent.disp_x, self.parent.disp_y, self.parent.activeImages, self.activeMarkers, self.parent.activeInstances, self.parent.grid_instances, self.parent.neighbors, iterations, nbNodes, self.nodeOnImage, self.topLimit, self.bottomLimit, relativeX, relativeY], newCalculation, signal=1)
+            self.neighborsThread = DIC_Global.createThread(self.parent.parentWindow, [self.parent.disp_x, self.parent.disp_y, self.parent.activeImages, self.activeMarkers, self.parent.activeInstances, self.parent.grid_instances, self.parent.neighbors, iterations, nbNodes, self.nodeOnImage, self.topLimit, self.bottomLimit, relativeX, relativeY], newCalculation, signal=1)
             self.neighborsThread.signal.threadSignal.connect(self.getResults)
             self.deleteButton.setEnabled(False)
 

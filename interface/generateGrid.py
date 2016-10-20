@@ -13,36 +13,21 @@ Current File: This file manages the complete grid creation tool with controls, f
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-
+import os, time, matplotlib as mpl, numpy as np, cv2
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
-from matplotlib import rcParams
-rcParams.update({'figure.autolayout': True})
-from matplotlib.widgets import Cursor
-import cv2
-import matplotlib.figure
-import matplotlib.patches
-import numpy as np
-import progressWidget
-import newProcessCorrelations
-import StrainAnalysis
-import time
-import filterWidget
-import getData
+from functions import DIC_Global, filterFunctions, newProcessCorrelations, getData
+from interface import filterWidget, progressWidget, StrainAnalysis
 
+def createGrid(DICWindow): #start the generateGrid widget and put it in the main window
 
+    imageFileList = DICWindow.fileNameList
+    #fileList = open(mainWindow.fileDataPath+'/filenamelist.dat',"r")
+    #for element in fileList:
+    #    imageFileList.append(element)
 
+    gridWidget = generateGridWidget(DICWindow, imageFileList)
 
-def createGrid(mainWindow): #start the generateGrid widget and put it in the main window
-
-    imageFileList = []
-    fileList = open(mainWindow.fileDataPath+'/filenamelist.dat',"r")
-    for element in fileList:
-        imageFileList.append(element)
-
-    gridWidget = generateGridWidget(mainWindow, imageFileList)
-
-    mainWindow.setCentralWidget(gridWidget)
+    DICWindow.setCentralWidget(gridWidget)
 
     gridWidget.topWidget.prepareTools(imageFileList)
 
@@ -90,7 +75,7 @@ class generateGridWidget(QWidget):
         self.mainBottomLayout.setSpacing(0)
         self.mainBottomLayout.setContentsMargins(0,0,0,0)
 
-        self.figureDisplayWidget = matplotlibWidget() #create matplotlib and filter widgets
+        self.figureDisplayWidget = DIC_Global.matplotlibWidget() #create matplotlib and filter widgets
         self.filterToolWidget = filterWidget.filterCreationWidget(self)
         #filterToolWidget.setDisabled(True)
         self.figureDisplayWidget.setFocusPolicy(Qt.ClickFocus) #activate mouse events on the matplotlib figure
@@ -117,24 +102,24 @@ class generateGridWidget(QWidget):
 
         currentImage = self.topWidget.currentImageValue.value()-1
         imagePath = self.parentWindow.filePath+'/'+self.imageFileList[currentImage]
-        self.figureDisplayWidget.imagePlot.cla()
+        self.figureDisplayWidget.matPlot.cla()
         imageFile = cv2.imread(imagePath.rstrip(), 0) #converting image to gray scale
 
         #applying filters
-        imageFile = filterWidget.applyFilterListToImage(self.filterToolWidget.appliedFiltersList, imageFile)
+        imageFile = filterFunctions.applyFilterListToImage(self.filterToolWidget.appliedFiltersList, imageFile)
 
         try:
             if filterPreview is not None:
-                imageFile = filterWidget.applyFilterToImage(filterPreview[0], filterPreview[1:4], imageFile)
+                imageFile = filterFunctions.applyFilterToImage(filterPreview[0], filterPreview[1:4], imageFile)
         except:
             pass
 
         #histogram
-        self.filterToolWidget.histoPlot.plot.cla()
-        self.filterToolWidget.histoPlot.plot.hist(imageFile.flatten(), bins=32, color='black')
-        self.filterToolWidget.histoPlot.plot.set_xlim([0,255])
-        self.filterToolWidget.histoPlot.plot.set_yticklabels([])
-        self.filterToolWidget.histoPlot.draw()
+        self.filterToolWidget.histoPlot.matPlot.cla()
+        self.filterToolWidget.histoPlot.matPlot.hist(imageFile.flatten(), bins=32, color='black')
+        self.filterToolWidget.histoPlot.matPlot.set_xlim([0,255])
+        self.filterToolWidget.histoPlot.matPlot.set_yticklabels([])
+        self.filterToolWidget.histoPlot.draw_idle()
 
         if self.imageActiveList[currentImage] == 1: #image non deleted by the user
             self.topWidget.imageActiveBox.setChecked(True)
@@ -158,14 +143,14 @@ class generateGridWidget(QWidget):
                         self.contourCenter.append([cX,cY])
                 self.topWidget.elementsValue.setText(str(len(self.contourCenter)))
 
-            self.currentImage = self.figureDisplayWidget.imagePlot.imshow(imageFile, cmap='gray', vmin=0, vmax=255)
+            self.currentImage = self.figureDisplayWidget.matPlot.imshow(imageFile, cmap='gray', vmin=0, vmax=255)
 
 
             squareLenght = minContourSize**(1/2.0)
             for element in self.contourCenter: #drawing squares in each detected contour location
                 corner = (element[0]-squareLenght/2,element[1]-squareLenght/2)
-                square = matplotlib.figure.Rectangle(corner, squareLenght, squareLenght, facecolor='None', edgecolor='green', linewidth=1.5)
-                self.figureDisplayWidget.imagePlot.add_patch(square)
+                square = mpl.figure.Rectangle(corner, squareLenght, squareLenght, facecolor='None', edgecolor='green', linewidth=1.5)
+                self.figureDisplayWidget.matPlot.add_patch(square)
 
             self.figureDisplayWidget.draw()
             if self.topWidget.centerToolWidget.isEnabled():
@@ -194,22 +179,22 @@ class generateGridWidget(QWidget):
 
         if self.topWidget.shiftCorrectionBox.isChecked() and self.topWidget.centerToolWidget.isEnabled() == False: #when drawing a rectangle for shift correction
 
-            self.rect = matplotlib.figure.Rectangle((self.x0, self.y0), 10, 10, facecolor='None', edgecolor='green', linewidth=2.5)
-            self.figureDisplayWidget.imagePlot.add_patch(self.rect)
+            self.rect = mpl.figure.Rectangle((self.x0, self.y0), 10, 10, facecolor='None', edgecolor='green', linewidth=2.5)
+            self.figureDisplayWidget.matPlot.add_patch(self.rect)
             self.figureDisplayWidget.draw_idle()
             self.motion = self.figureDisplayWidget.mpl_connect('motion_notify_event', self.motionEvent) #activate the motion event and call on_motion function for each movement of the mouse
 
         if self.topWidget.rectangleSelection.isChecked(): #when drawing an area to create a rectangle grid
 
-            self.rect = matplotlib.figure.Rectangle((self.x0, self.y0), 10, 10, facecolor='None', edgecolor='green', linewidth=2.5)
-            self.figureDisplayWidget.imagePlot.add_patch(self.rect)
+            self.rect = mpl.figure.Rectangle((self.x0, self.y0), 10, 10, facecolor='None', edgecolor='green', linewidth=2.5)
+            self.figureDisplayWidget.matPlot.add_patch(self.rect)
             self.figureDisplayWidget.draw_idle()
             self.motion = self.figureDisplayWidget.mpl_connect('motion_notify_event', self.motionEvent) #activate the motion event and call on_motion function for each movement of the mouse
 
         if self.topWidget.ellipseSelection.isChecked(): #when drawing an area to create an ellipsoidal grid
 
-            self.ellipse = matplotlib.patches.Ellipse((self.x0, self.y0), 10, 10, 0, color='green', fill=False, linewidth=2.5)
-            self.figureDisplayWidget.imagePlot.add_patch(self.ellipse)
+            self.ellipse = mpl.patches.Ellipse((self.x0, self.y0), 10, 10, 0, color='green', fill=False, linewidth=2.5)
+            self.figureDisplayWidget.matPlot.add_patch(self.ellipse)
             self.figureDisplayWidget.draw_idle()
             self.motion = self.figureDisplayWidget.mpl_connect('motion_notify_event', self.motionEvent) #activate the motion event and call on_motion function for each movement of the mouse
 
@@ -232,8 +217,8 @@ class generateGridWidget(QWidget):
 
             if self.selectedInstance > -1: #drawing a rectangle to follow the displacement of the element by the user
                 self.rectCenter = (lowLimitX, lowLimitY)
-                self.rect = matplotlib.figure.Rectangle(self.rectCenter, highLimitX-lowLimitX, highLimitY-lowLimitY, facecolor='None', edgecolor='green', linewidth=2.5)
-                self.figureDisplayWidget.imagePlot.add_patch(self.rect)
+                self.rect = mpl.figure.Rectangle(self.rectCenter, highLimitX-lowLimitX, highLimitY-lowLimitY, facecolor='None', edgecolor='green', linewidth=2.5)
+                self.figureDisplayWidget.matPlot.add_patch(self.rect)
                 self.figureDisplayWidget.draw_idle()
                 self.motion = self.figureDisplayWidget.mpl_connect('motion_notify_event', self.motionEvent) #activate the motion event and call on_motion function for each movement of the mouse
 
@@ -244,8 +229,8 @@ class generateGridWidget(QWidget):
 
         if self.topWidget.removeManualButton.isChecked():
 
-            self.rect = matplotlib.figure.Rectangle((self.x0, self.y0), 10, 10, facecolor='None', edgecolor='green', linewidth=2.5)
-            self.figureDisplayWidget.imagePlot.add_patch(self.rect)
+            self.rect = mpl.figure.Rectangle((self.x0, self.y0), 10, 10, facecolor='None', edgecolor='green', linewidth=2.5)
+            self.figureDisplayWidget.matPlot.add_patch(self.rect)
             self.figureDisplayWidget.draw_idle()
             self.motion = self.figureDisplayWidget.mpl_connect('motion_notify_event', self.motionEvent) #activate the motion event and call on_motion function for each movement of the mouse
 
@@ -275,9 +260,9 @@ class generateGridWidget(QWidget):
         if self.topWidget.ellipseSelection.isChecked():
 
             self.ellipse.remove()
-            self.ellipse = matplotlib.patches.Ellipse((.5*(self.x0+x1), .5*(self.y0+y1)), self.width, self.height, 0, color='green', fill=False, linewidth=2.5)
+            self.ellipse = mpl.patches.Ellipse((.5*(self.x0+x1), .5*(self.y0+y1)), self.width, self.height, 0, color='green', fill=False, linewidth=2.5)
             self.ellipse.set_linestyle('dashed')
-            self.figureDisplayWidget.imagePlot.add_patch(self.ellipse)
+            self.figureDisplayWidget.matPlot.add_patch(self.ellipse)
 
         if self.topWidget.selectManualButton.isChecked():
 
@@ -390,7 +375,7 @@ class generateGridWidget(QWidget):
             return
         else:
             #Test if files exists and extract data
-            filterList = filterWidget.saveOpenFilter(filterDirectory)
+            filterList = filterFunctions.saveOpenFilter(filterDirectory)
             if filterList is not None:
                 self.filterToolWidget.appliedFiltersList = filterList.tolist()
             else:
@@ -486,7 +471,7 @@ class generateGridWidget(QWidget):
 
     def refreshMarkers(self): #take all the markers in the list of marker instances and plot them
 
-        self.figureDisplayWidget.imagePlot.autoscale(False)
+        self.figureDisplayWidget.matPlot.autoscale(False)
         nbMarkers = 0
         xCoords = 0
         yCoords = 0
@@ -496,7 +481,7 @@ class generateGridWidget(QWidget):
 
         for element in self.markerInstances:
             nbMarkers += len(np.atleast_1d(element[0]))
-            self.figureDisplayWidget.imagePlot.plot(element[0]+xCoords, element[1]+yCoords, '+r')
+            self.figureDisplayWidget.matPlot.plot(element[0]+xCoords, element[1]+yCoords, '+r')
 
         if nbMarkers > 2: #minimum 3 markers needed to start the processing
             self.topWidget.processButton.setEnabled(True)
@@ -893,7 +878,8 @@ class topToolsWidget(QWidget): #contains the different tools to create the grid,
                 self.parentWidget.plotImage()
                 self.largeDisp = None
         elif track == 1: #start a thread an do the calculation
-            shiftThread = self.parentWidget.parentWindow.createThread([self.parentWidget.parentWindow.filePath, self.parentWidget.imageFileList[0:self.nbImagesToProcess], self.parentWidget.imageActiveList, [self.parentWidget.x0, self.parentWidget.y0, self.parentWidget.x0+self.parentWidget.width, self.parentWidget.y0+self.parentWidget.height], self.parentWidget.filterToolWidget.appliedFiltersList], newProcessCorrelations.shiftDetection, signal=1)
+            areaChoice = [int(self.parentWidget.x0), int(self.parentWidget.y0), int(self.parentWidget.x0+self.parentWidget.width), int(self.parentWidget.y0+self.parentWidget.height)]
+            shiftThread = DIC_Global.createThread(self.parentWidget.parentWindow, [self.parentWidget.parentWindow.filePath, self.parentWidget.imageFileList[0:self.nbImagesToProcess], self.parentWidget.imageActiveList, areaChoice, self.parentWidget.filterToolWidget.appliedFiltersList], newProcessCorrelations.shiftDetection, signal=1)
             shiftThread.signal.threadSignal.connect(self.processingShiftCorrection)
             shiftThread.start()
             self.trackButton.setDisabled(True)
@@ -917,10 +903,10 @@ class topToolsWidget(QWidget): #contains the different tools to create the grid,
                 self.lastTime = currentTime
                 rectCornerX = self.parentWidget.x0+shiftX
                 rectCornerY = self.parentWidget.y0+shiftY
-                rect = matplotlib.figure.Rectangle((rectCornerX, rectCornerY), self.parentWidget.width, self.parentWidget.height, facecolor='None', edgecolor='green', linewidth=2.5)
-                self.parentWidget.figureDisplayWidget.imagePlot.add_patch(rect)
+                rect = mpl.figure.Rectangle((rectCornerX, rectCornerY), self.parentWidget.width, self.parentWidget.height, facecolor='None', edgecolor='green', linewidth=2.5)
+                self.parentWidget.figureDisplayWidget.matPlot.add_patch(rect)
                 self.parentWidget.figureDisplayWidget.draw_idle()
-            self.trackButton.setText(str(percent)+'%')
+            self.trackButton.setText(str(int(percent))+'%')
         else:
             self.largeDisp = shiftX
             self.infosButtonsLayout.setCurrentIndex(2)
@@ -970,27 +956,16 @@ class topToolsWidget(QWidget): #contains the different tools to create the grid,
         gridX = np.transpose(np.vstack((gridX, entityX)))
         gridY = np.transpose(np.vstack((gridY, entityY)))
         #saving gridx and gridy files
-        np.savetxt(self.parentWidget.parentWindow.fileDataPath+'/gridx.csv', gridX, fmt='%s', delimiter=',')
-        np.savetxt(self.parentWidget.parentWindow.fileDataPath+'/gridy.csv', gridY, fmt='%s', delimiter=',')
+        analysisDirectory = self.parentWidget.parentWindow.fileDataPath
+        os.makedirs(analysisDirectory)
+        np.savetxt(analysisDirectory+'/gridx.csv', gridX, fmt='%s', delimiter=',')
+        np.savetxt(analysisDirectory+'/gridy.csv', gridY, fmt='%s', delimiter=',')
 
         #Launch Process
-        calculatingThread = self.parentWidget.parentWindow.createThread([self.parentWidget.imageFileList[0:self.nbImagesToProcess], gridX[:,0], gridY[:,0], self.corrsizeValue.value(), baseMode, floatStep, self.parentWidget, self.parentWidget.parentWindow, self.largeDisp, self.parentWidget.filterToolWidget.appliedFiltersList], newProcessCorrelations.prepareCorrelations, signal=1)
+        calculatingThread = DIC_Global.createThread(self.parentWidget.parentWindow, [self.parentWidget.imageFileList[0:self.nbImagesToProcess], gridX[:,0], gridY[:,0], self.corrsizeValue.value(), baseMode, floatStep, self.parentWidget, self.parentWidget.parentWindow, self.largeDisp, self.parentWidget.filterToolWidget.appliedFiltersList], newProcessCorrelations.prepareCorrelations, signal=1)
         calculatingThread.signal.threadSignal.connect(lambda: StrainAnalysis.analyseResult(self.parentWidget.parentWindow, self.parentWidget.parentWindow))
         calculatingThread.start()
 
         self.parentWidget.mainBottomLayout.removeWidget(self.parentWidget.filterToolWidget)
         self.parentWidget.filterToolWidget.deleteLater()
         self.parentWidget.filterToolWidget = None
-
-
-
-class matplotlibWidget(FigureCanvas):  #widget to plot image and points inside the dialog and not on a separate window
-
-    def __init__(self):
-        super(matplotlibWidget,self).__init__(Figure())
-        self.figure = Figure()
-        self.figure.set_facecolor('none')
-        self.canvas = FigureCanvas(self.figure)
-        self.imagePlot = self.figure.add_subplot(111)
-        self.figure.tight_layout(pad=0)
-        self.figure.set_size_inches((20,20)) #high values to allow the image to use as much space as available in the window

@@ -12,15 +12,10 @@ More details regarding the project on the GitHub Wiki : https://github.com/Chris
 Current File: This file runs the Main Analysis widget, parent of the whole visualization tool
 """
 
-import menubar
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-import getData
-import initData
-import progressWidget
-import masks
-import controlWidget
-
+from interface import menubar, initApp, progressWidget, controlWidget
+from functions import DIC_Global, getData, initData, masks
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
@@ -28,7 +23,6 @@ import matplotlib.mlab as ml
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib import cm
-
 import numpy as np
 
 class MainAnalysis(QWidget):
@@ -53,7 +47,7 @@ class MainAnalysis(QWidget):
         self.parentWindow.devWindow.addInfo('Starting the thread.. Analysis Loading..')
 
         #initiate and start the opening thread
-        self.openingThread = self.parentWindow.createThread([self.parentWindow, self.openingBar], getData.openData, signal=1)
+        self.openingThread = DIC_Global.createThread(self.parentWindow, [self.parentWindow, self.openingBar], getData.openData, signal=1)
         self.openingThread.signal.threadSignal.connect(self.dataLoaded)
         self.openingThread.start()
 
@@ -90,9 +84,9 @@ class MainAnalysis(QWidget):
             self.neighbors = None
             self.createLayout()
         else:
-            self.parentWindow.homeWidget('Missing Files. Please check the documentation.')
-
-
+            firstWidget = initApp.defaultWidget(self.parentWindow)
+            self.parentWindow.setCentralWidget(firstWidget)
+            firstWidget.printMessage('Missing Files. Please check the documentation.', imp=1)
 
     def createLayout(self):
 

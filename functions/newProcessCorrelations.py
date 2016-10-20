@@ -11,13 +11,8 @@ More details regarding the project on the GitHub Wiki : https://github.com/Chris
 Current File: This file manages the complete image processing operation
 """
 
-import numpy as np
-import cv2
-import filterWidget
-import CpCorr
-import time
-import os
-import initData
+import numpy as np, cv2, time, os
+from functions import DIC_Global, filterFunctions, CpCorr, initData
 
 def prepareCorrelations(fileNameList, gridX, gridY, corrsize, baseMode, floatStep, parentWidget, parentWindow, largeDisp, filterInfos, thread):
 
@@ -86,7 +81,7 @@ def prepareCorrelations(fileNameList, gridX, gridY, corrsize, baseMode, floatSte
             end = int((i+1)*nbMarkersPerProcess)
         args.append((fileNameList, activeImages, parentWindow.filePath, gridX[start:end], gridY[start:end], baseMode, corrsize, floatStep, largeDisp, filterInfos))
 
-    result = parentWindow.createProcess(processCorrelation, args, PROCESSES, parentWidget.calculationBar, '(1/2) Processing images...')
+    result = DIC_Global.createProcess(parentWindow, processCorrelation, args, PROCESSES, parentWidget.calculationBar, '(1/2) Processing images...')
 
 
     parentWindow.devWindow.addInfo('Calculation finished. Saving data files.')
@@ -128,7 +123,7 @@ def prepareCorrelations(fileNameList, gridX, gridY, corrsize, baseMode, floatSte
     parentWidget.calculationBar.currentTitle = 'Saving infoMarkers.csv...'
     Save('infoMarkers', result[7].astype(int), parentWindow.fileDataPath)
     if len(filterInfos) > 0:
-        filterWidget.saveOpenFilter(parentWindow.fileDataPath, filterList=filterInfos)
+        filterFunctions.saveOpenFilter(parentWindow.fileDataPath, filterList=filterInfos)
 
     parentWindow.devWindow.addInfo('Calculation done. Data files saved.')
     totalTime = time.time() - startTime
@@ -194,7 +189,7 @@ def processCorrelation(fileNameList, activeImages, filePath, gridX, gridY, baseM
 
 
     #apply filter if loaded
-    base = filterWidget.applyFilterListToImage(filterInfos, base)
+    base = filterFunctions.applyFilterListToImage(filterInfos, base)
 
 
     ValidX[:,refImg]=basePointsX[:,0]
@@ -215,7 +210,7 @@ def processCorrelation(fileNameList, activeImages, filePath, gridX, gridY, baseM
         if activeImages[CurrentImage] == 1:
 
             inputImg = cv2.imread(filePath+'/'+fileNameList[CurrentImage], 0)
-            inputImg = filterWidget.applyFilterListToImage(filterInfos, inputImg)
+            inputImg = filterFunctions.applyFilterListToImage(filterInfos, inputImg)
             #inputImg = cv2.cvtColor(inputRaw, cv2.COLOR_BGR2GRAY)
 
             if baseMode == 2:
@@ -225,7 +220,7 @@ def processCorrelation(fileNameList, activeImages, filePath, gridX, gridY, baseM
                     while(activeImages[CurrentImage-floatStep-imageSelection] == 0):
                         imageSelection += 1
                     base = cv2.imread(filePath+'/'+fileNameList[CurrentImage-floatStep-imageSelection], 0)
-                    base = filterWidget.applyFilterListToImage(filterInfos, base)
+                    base = filterFunctions.applyFilterListToImage(filterInfos, base)
                     newX = ValidX[:,CurrentImage-floatStep-imageSelection]
                     newY = ValidY[:,CurrentImage-floatStep-imageSelection]
                     basePointsX = np.reshape(newX, (len(newX),1))
@@ -344,7 +339,7 @@ def shiftDetection(filePath, imageList, activeImages, area, filterList, thread):
     largeDisp = np.zeros((len(imageList),2))
 
     initImage = cv2.imread(filePath+'/'+imageList[0].rstrip(), 0) #read the full image
-    initImage = filterWidget.applyFilterListToImage(filterList, initImage)
+    initImage = filterFunctions.applyFilterListToImage(filterList, initImage)
     nbImages = len(imageList)
     currentPercent = 1
 
@@ -362,7 +357,7 @@ def shiftDetection(filePath, imageList, activeImages, area, filterList, thread):
     for i in activeFileList:
 
         newImage = cv2.imread(filePath+'/'+imageList[i].rstrip(),0)
-        newImage = filterWidget.applyFilterListToImage(filterList, newImage)
+        newImage = filterFunctions.applyFilterListToImage(filterList, newImage)
 
         matchArea = cv2.matchTemplate(newImage, template, cv2.TM_CCORR_NORMED)
         minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(matchArea)

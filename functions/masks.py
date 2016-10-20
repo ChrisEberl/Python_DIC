@@ -14,15 +14,9 @@ Current File: This file manages the whole masks saving and opening features
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-import time
-import os
-import numpy as np
-import initData
-import plot2D
-import plot3D
-import getData
-import progressWidget
-import dockWidget
+import time, os, numpy as np
+from functions import DIC_Global, initData, plot2D, plot3D, getData
+from interface import progressWidget, dockWidget
 
 def generateMask(mask, path, fileName=None, confirmDialog=True):
 
@@ -170,7 +164,7 @@ def maskData(parentWindow, mask, progressBar=None, dataList=None):
     #parentWindow.currentMask = mask
 
     if dataList is None:
-        calculatingThread = parentWindow.parentWindow.createThread([parentWindow, progressBar, mask], initData.initPlottedData, signal=1)
+        calculatingThread = DIC_Global.createThread(parentWindow.parentWindow, [parentWindow, progressBar, mask], initData.initPlottedData, signal=1)
         calculatingThread.signal.threadSignal.connect(lambda: newMasksCalculated(parentWindow, progressBar))
         calculatingThread.start()
     else:

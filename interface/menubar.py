@@ -12,18 +12,10 @@ Current File: This file manages the menubar and create menus and actions
 """
 
 from PyQt4.QtGui import *
-import fileList
-import dispVsPos
-import relativeNeighborsDialog
-import profile
-import masks
-import deleteImages
-import maskInstances
-import analysisInfos
-import maskMarkers
+from functions import startOptions, masks
+from interface import profile, dispVsPos, relativeNeighborsDialog, deleteImages, maskInstances, analysisInfos, maskMarkers
 
 def createMenuActions(self):
-
 
     #fileMenu Actions
     self.newAction = QAction('New Analysis', self)
@@ -70,8 +62,8 @@ def createMenuActions(self):
     self.analysisInfos.setStatusTip('Get detailed informations on the current analysis.')
 
     #Actions Triggers
-    self.newAction.triggered.connect(lambda: fileList.generateFileList(self))
-    self.openAction.triggered.connect(lambda: fileList.openFileList(self))
+    self.newAction.triggered.connect(lambda: startOptions.startNewAnalysis(self))
+    self.openAction.triggered.connect(lambda: startOptions.openPrevious(self))
     self.exitAction.triggered.connect(self.close)
     self.openGrid.triggered.connect(lambda: self.centralWidget().openGrid())
     self.openFilter.triggered.connect(lambda: self.centralWidget().openFilter())

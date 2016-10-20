@@ -13,10 +13,8 @@ Current File: This file manages the control tools in the analysis results
 
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
-import os
-import numpy as np
-import masks
-
+import os, numpy as np
+from functions import masks
 
 class controlWidget(QWidget):
 

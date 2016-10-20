@@ -13,10 +13,9 @@ Current File: This file manages dialog to mask images from the current analysis
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-import numpy as np
-import masks
-import progressWidget
-import copy
+import numpy as np, copy
+from functions import masks
+from interface import progressWidget
 
 class deleteImageDialog(QDialog):
 

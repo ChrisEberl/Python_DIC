@@ -11,17 +11,11 @@ More details regarding the project on the GitHub Wiki : https://github.com/Chris
 Current File: This file manages the analysis files and open/generate data from them
 """
 
-import csv
-import os
-import numpy as np
-from math import sqrt
-import startWidget
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-import time
-import initData
-import multiprocessing
-import filterWidget
+import csv, os, numpy as np, time, multiprocessing
+from math import sqrt
+from functions import DIC_Global, filterFunctions, initData
 
 
 def openData(parentWindow, progressBar, parent): #parent contains the Thread in which the opening is made
@@ -61,7 +55,7 @@ def generateData(parentWindow, progressBar):
             end = int((i+1)*nbFilesPerProcess)
         args.append((dataToLoad[start:end],))
 
-    result = parentWindow.createProcess(getDataFromFile, args, PROCESSES, progressBar=progressBar, textBar='Opening data files ...') #result is a (nbImages*nbFiles) x nbMarkers matrix
+    result = DIC_Global.createProcess(parentWindow, getDataFromFile, args, PROCESSES, progressBar=progressBar, textBar='Opening data files ...') #result is a (nbImages*nbFiles) x nbMarkers matrix
 
     if result is None:
         return None
@@ -81,7 +75,7 @@ def generateData(parentWindow, progressBar):
     temp_grid_instances = np.array(temp_grid_instances)
 
 
-    filterList = filterWidget.saveOpenFilter(parentWindow.fileDataPath)
+    filterList = filterFunctions.saveOpenFilter(parentWindow.fileDataPath)
     nbImages = len(filenamelist)
 
     largeDisp = getDataFromFile([parentWindow.fileDataPath+'/largeDisp.csv'], 0, singleColumn=1)

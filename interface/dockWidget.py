@@ -13,15 +13,11 @@ Current File: This file manages the movable and closable dockWidgets displaying 
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-import numpy as np
-import plot3D
-import plot2D
+import numpy as np, cv2
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
-import filterWidget
-import cv2
-
+from functions import filterFunctions, plot2D, plot3D
 
 
 class dockPlot(QDockWidget): #dockWidget containing a Matplotlib Widget
@@ -107,7 +103,7 @@ class dockPlot(QDockWidget): #dockWidget containing a Matplotlib Widget
                 image = cv2.imread(self.parentWindow.filePath + '/' + str(self.parentWindow.analysisWidget.fileNameList[realImage]),0)
                 filterList = self.parentWindow.analysisWidget.filterList
                 if filterList is not None and image is not None:
-                    image = filterWidget.applyFilterListToImage(filterList, image)
+                    image = filterFunctions.applyFilterListToImage(filterList, image)
                 plot2D.update2D_displacementDeviation(self.dockWidget.plot, data_x, data_y, image)
             elif self.graphDisplay == 2: # CORRELATION 2D
                 plot2D.update2D_correlation(self, self.dockWidget.figure, self.dockWidget.plot, data_x)
