@@ -14,7 +14,6 @@ Current File: This file manages the complete grid creation tool with controls, f
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 import os, time, matplotlib as mpl, numpy as np, cv2
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from functions import DIC_Global, filterFunctions, newProcessCorrelations, getData
 from interface import filterWidget, progressWidget, StrainAnalysis
 

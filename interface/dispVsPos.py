@@ -10,14 +10,10 @@ More details regarding the project on the GitHub Wiki : https://github.com/Chris
 
 Current File: This file manages the Disp. vs Pos. mask procedure
 """
-
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-import numpy as np, copy
-from matplotlib import patches
-from functions import masks
+import numpy as np, copy, matplotlib.patches as mpp
+from functions import masks, DIC_Global
 from interface import progressWidget
 
 
@@ -72,7 +68,7 @@ class dispVsPosDialog(QDialog):
         self.displayYMarkers.stateChanged.connect(self.plotDispersion)
         self.imageSelectSpinBox.valueChanged.connect(self.plotDispersion)
 
-        self.plotArea = MatplotlibImageWidget(self)
+        self.plotArea = DIC_Global.matplotlibWidget()
         self.plotArea.setFocusPolicy(Qt.ClickFocus)
         self.plotArea.setFocus()
 
@@ -98,7 +94,7 @@ class dispVsPosDialog(QDialog):
 
         value = self.activeImages[self.imageSelectSpinBox.value()-1]
 
-        self.plotArea.imagePlot.cla()
+        self.plotArea.matPlot.cla()
         self.plotArea.mpl_connect('button_press_event', self.on_press) #activate mouse event detection
         self.plotArea.mpl_connect('button_release_event', self.on_release)
         self.plotArea.mpl_connect('key_press_event', self.on_key)
@@ -132,11 +128,11 @@ class dispVsPosDialog(QDialog):
                 lbl = 'Instance '+str(self.activeInstances[instance])+' - X-Disp.'
                 if len(np.atleast_1d(unSelectedMarkers)) > 1:
                     ax, bx = np.polyfit(data_x_init[unSelectedMarkers], disp_x_init[unSelectedMarkers], 1) #calculate the fitting line without taking care of the selected markers
-                    plotXFit = self.plotArea.imagePlot.plot(data_x_init[unSelectedMarkers], ax*data_x_init[unSelectedMarkers]+bx, '-', color=clr)
+                    plotXFit = self.plotArea.matPlot.plot(data_x_init[unSelectedMarkers], ax*data_x_init[unSelectedMarkers]+bx, '-', color=clr)
                 else:
                     clr = 'magenta'
-                self.plotArea.imagePlot.plot(data_x_init[unSelectedMarkers], disp_x_init[unSelectedMarkers], 'o', ms=3, color=clr, label=lbl)    #plot all the markers in X direction
-                self.plotArea.imagePlot.plot(data_x_init[selectedMarkers], disp_x_init[selectedMarkers], 'o', ms=5, color='red')
+                self.plotArea.matPlot.plot(data_x_init[unSelectedMarkers], disp_x_init[unSelectedMarkers], 'o', ms=3, color=clr, label=lbl)    #plot all the markers in X direction
+                self.plotArea.matPlot.plot(data_x_init[selectedMarkers], disp_x_init[selectedMarkers], 'o', ms=5, color='red')
 
                 if len(np.atleast_1d(disp_x_init[instanceMarkers])) > 0:
                     minLimit = min(np.min(disp_x_init[instanceMarkers]), minLimit)
@@ -149,11 +145,11 @@ class dispVsPosDialog(QDialog):
                 lbl = 'Instance '+str(self.activeInstances[instance])+' - Y-Disp.'
                 if len(np.atleast_1d(unSelectedMarkers)) > 1:
                     ay, by = np.polyfit(data_y_init[unSelectedMarkers], disp_y_init[unSelectedMarkers], 1) #calculate the fitting line without taking care of the selected markers
-                    plotYFit = self.plotArea.imagePlot.plot(data_y_init[unSelectedMarkers], ay*data_y_init[unSelectedMarkers]+by, '-', color=clr)
+                    plotYFit = self.plotArea.matPlot.plot(data_y_init[unSelectedMarkers], ay*data_y_init[unSelectedMarkers]+by, '-', color=clr)
                 else:
                     clr = 'orange'
-                self.plotArea.imagePlot.plot(data_y_init[unSelectedMarkers], disp_y_init[unSelectedMarkers], 'o', ms=3, color=clr, label=lbl)    #plot all the markers in X direction
-                self.plotArea.imagePlot.plot(data_y_init[selectedMarkers], disp_y_init[selectedMarkers], 'o', ms=5, color='red')
+                self.plotArea.matPlot.plot(data_y_init[unSelectedMarkers], disp_y_init[unSelectedMarkers], 'o', ms=3, color=clr, label=lbl)    #plot all the markers in X direction
+                self.plotArea.matPlot.plot(data_y_init[selectedMarkers], disp_y_init[selectedMarkers], 'o', ms=5, color='red')
 
                 if len(np.atleast_1d(disp_y_init[instanceMarkers])) > 0:
                     minLimit = min(np.min(disp_y_init[instanceMarkers]), minLimit)
@@ -161,13 +157,13 @@ class dispVsPosDialog(QDialog):
 
 
         if minLimit != maxLimit:
-            self.plotArea.imagePlot.set_ylim([minLimit-.1*np.absolute(minLimit),maxLimit+.1*np.absolute(maxLimit)]) # 10% extra to be able to select all markers
+            self.plotArea.matPlot.set_ylim([minLimit-.1*np.absolute(minLimit),maxLimit+.1*np.absolute(maxLimit)]) # 10% extra to be able to select all markers
         else:
-            self.plotArea.imagePlot.set_ylim([-1,1])
+            self.plotArea.matPlot.set_ylim([-1,1])
 
 
         if (self.displayXMarkers.isChecked() or self.displayYMarkers.isChecked()) and (plotXFit is not None or plotYFit is not None): #plot the legend
-            self.plotArea.imagePlot.legend()
+            self.plotArea.matPlot.legend()
 
         self.plotArea.draw_idle() #refresh the area
 
@@ -227,8 +223,8 @@ class dispVsPosDialog(QDialog):
             return
         self.x2 = self.x0 #save coordinates in case the user goes out of the picture limits
         self.y2 = self.y0
-        self.rect = patches.Rectangle((0,0), 0, 0, facecolor='None', edgecolor='green', linewidth=2.5) #add invisible rectangle to be shown later
-        self.plotArea.imagePlot.add_patch(self.rect)
+        self.rect = mpp.Rectangle((0,0), 0, 0, facecolor='None', edgecolor='green', linewidth=2.5) #add invisible rectangle to be shown later
+        self.plotArea.matPlot.add_patch(self.rect)
         self.motionRect = self.plotArea.mpl_connect('motion_notify_event', self.on_motion)
         self.rect.set_xy((self.x0, self.y0))
         self.rect.set_linestyle('dashed')
@@ -294,19 +290,6 @@ class dispVsPosDialog(QDialog):
             progressBar = progressWidget.progressBarDialog('Saving masks..')
             masks.maskData(self.parent, self.currentMask, progressBar)
             self.close()
-
-
-
-class MatplotlibImageWidget(FigureCanvas):
-
-    def __init__(self, parentWidget):
-        super(MatplotlibImageWidget,self).__init__(Figure())
-        self.figure = Figure()
-        self.figure.set_facecolor('none')
-        self.canvas = FigureCanvas(self.figure)
-        self.imagePlot = self.figure.add_subplot(111)
-        self.figure.tight_layout()
-
 
 def launchDVPDialog(self, currentImage): #initiate the variables and launch the dialog
 

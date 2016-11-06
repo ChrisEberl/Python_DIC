@@ -11,14 +11,10 @@ More details regarding the project on the GitHub Wiki : https://github.com/Chris
 Current File: This file manages mask marker feature dialog
 """
 
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
-from matplotlib.figure import Figure
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-import numpy as np, cv2, copy
-from matplotlib import patches
-from functions import filterFunctions, masks
+import numpy as np, cv2, copy, matplotlib.patches as mpp
+from functions import filterFunctions, masks, DIC_Global
 from interface import progressWidget
 
 class deleteMarkersDialog(QDialog):
@@ -32,7 +28,7 @@ class deleteMarkersDialog(QDialog):
         dialogLayout = QVBoxLayout()
 
         #init_Variables
-        self.parent = parent
+        self.parentWidget = parent
         self.fileDataPath = parent.parentWindow.fileDataPath
         self.filePath = parent.parentWindow.filePath
         self.filenamelist = parent.fileNameList
@@ -46,6 +42,7 @@ class deleteMarkersDialog(QDialog):
         self.data_y = parent.data_y
         self.disp_x = parent.disp_x
         self.disp_y = parent.disp_y
+        self.graphDisplay = 99 #temporary toolbar fix
 
         dialogLabel = QLabel('Select markers you want to mask.<br>A first click initiate the selection, a second click confirms the selection. (Type C to cancel)')
         dialogLabel.setAlignment(Qt.AlignHCenter)
@@ -64,7 +61,8 @@ class deleteMarkersDialog(QDialog):
         self.baseMarkers.stateChanged.connect(lambda: self.selectMarkers())
         self.dispMarkers.stateChanged.connect(lambda: self.selectMarkers())
 
-        self.plotArea = matplotlibWidget()
+        self.plotArea = DIC_Global.matplotlibWidget(self, parent=self, toolbar=1) #toolbar != None for horizontal toolbar
+        self.plotArea.setMinimumHeight(self.plotArea.canvas.height())
         self.plotArea.canvas.setFocusPolicy(Qt.ClickFocus)
         self.plotArea.canvas.setFocus()
 
@@ -135,9 +133,9 @@ class deleteMarkersDialog(QDialog):
 
             if self.baseMarkers.isChecked():
                 try:
-                    self.selectedMarkersPlot[instance] = self.plotArea.plot.plot(data_x_init[unSelectedMarkers], data_y_init[unSelectedMarkers], 'o', ms=5, color='green')[0]
+                    self.selectedMarkersPlot[instance] = self.plotArea.matPlot.plot(data_x_init[unSelectedMarkers], data_y_init[unSelectedMarkers], 'o', ms=5, color='green')[0]
                 except:
-                    self.selectedMarkersPlot.append(self.plotArea.plot.plot(data_x_init[unSelectedMarkers], data_y_init[unSelectedMarkers], 'o', ms=3, color='green')[0])
+                    self.selectedMarkersPlot.append(self.plotArea.matPlot.plot(data_x_init[unSelectedMarkers], data_y_init[unSelectedMarkers], 'o', ms=3, color='green')[0])
 
             if self.dispMarkers.isChecked():
                 nb = 0
@@ -147,12 +145,12 @@ class deleteMarkersDialog(QDialog):
                 for marker in unSelectedMarkers:
                     try:
                         self.arrowsPlot[instance][nb].remove()
-                        self.arrowsPlot[instance][nb] = self.plotArea.plot.arrow(data_x_init[marker], data_y_init[marker], disp_x_init[marker], disp_y_init[marker], head_width=3, head_length=7, color='blue')
+                        self.arrowsPlot[instance][nb] = self.plotArea.matPlot.arrow(data_x_init[marker], data_y_init[marker], disp_x_init[marker], disp_y_init[marker], head_width=3, head_length=7, color='blue')
                     except:
                         if len(np.atleast_1d(self.arrowsPlot[instance])) < nbUnselected:
-                            self.arrowsPlot[instance].append(self.plotArea.plot.arrow(data_x_init[marker], data_y_init[marker], disp_x_init[marker], disp_y_init[marker], head_width=3, head_length=7, color='blue'))
+                            self.arrowsPlot[instance].append(self.plotArea.matPlot.arrow(data_x_init[marker], data_y_init[marker], disp_x_init[marker], disp_y_init[marker], head_width=3, head_length=7, color='blue'))
                         else:
-                            self.arrowsPlot[instance][nb] = self.plotArea.plot.arrow(data_x_init[marker], data_y_init[marker], disp_x_init[marker], disp_y_init[marker], head_width=3, head_length=7, color='blue')
+                            self.arrowsPlot[instance][nb] = self.plotArea.matPlot.arrow(data_x_init[marker], data_y_init[marker], disp_x_init[marker], disp_y_init[marker], head_width=3, head_length=7, color='blue')
                     nb+=1
             else:
                 try:
@@ -162,16 +160,16 @@ class deleteMarkersDialog(QDialog):
                     pass
 
                 try:
-                    self.unselectedMarkersPlot[instance] = self.plotArea.plot.plot(data_x_init[selectedMarkers], data_y_init[selectedMarkers], 'o', ms=5, color='red')[0]
+                    self.unselectedMarkersPlot[instance] = self.plotArea.matPlot.plot(data_x_init[selectedMarkers], data_y_init[selectedMarkers], 'o', ms=5, color='red')[0]
                 except:
-                    self.unselectedMarkersPlot.append(self.plotArea.plot.plot(data_x_init[selectedMarkers], data_y_init[selectedMarkers], 'o', ms=5, color='red')[0])
+                    self.unselectedMarkersPlot.append(self.plotArea.matPlot.plot(data_x_init[selectedMarkers], data_y_init[selectedMarkers], 'o', ms=5, color='red')[0])
 
 
-        self.imagePlot = self.plotArea.plot.imshow(readImage, cmap='gray')
+        self.imagePlot = self.plotArea.matPlot.imshow(readImage, cmap='gray')
         self.plotArea.canvas.draw_idle()
 
         if firstStart == 1:
-            self.plotArea.plot.cla()
+            self.plotArea.matPlot.cla()
             self.selectMarkers()
 
     def on_motion(self,event): #allow a live drawing of the rectangle area
@@ -201,8 +199,8 @@ class deleteMarkersDialog(QDialog):
                     return
                 self.x2 = self.x0 #save coordinates in case the user goes out of the picture limits
                 self.y2 = self.y0
-                self.rect = patches.Rectangle((self.x0, self.y0), 1, 1, facecolor='None', edgecolor='green', linewidth=2.5)
-                self.plotArea.plot.add_patch(self.rect)
+                self.rect = mpp.Rectangle((self.x0, self.y0), 1, 1, facecolor='None', edgecolor='green', linewidth=2.5)
+                self.plotArea.matPlot.add_patch(self.rect)
                 self.motionRect = self.plotArea.canvas.mpl_connect('motion_notify_event', self.on_motion)
                 self.rect.set_linestyle('dashed')
                 self.firstClic = 1
@@ -239,7 +237,7 @@ class deleteMarkersDialog(QDialog):
             self.rect.remove()
             isValidEvent = True
         if event.key == 'r':
-            self.plotArea.plot.cla()
+            self.plotArea.matPlot.cla()
             isValidEvent = True
 
         if isValidEvent is True:
@@ -278,38 +276,10 @@ class deleteMarkersDialog(QDialog):
     def maskSelection(self): #when the selection is done and 'Delete' button clicked, remove all selected markers on all images
 
         if masks.generateMask(self.currentMask, self.fileDataPath) is not None:
-            self.parent.parentWindow.devWindow.addInfo('Deleting selected markers..')
+            self.parentWidget.parentWindow.devWindow.addInfo('Deleting selected markers..')
             progressBar = progressWidget.progressBarDialog('Saving masks..')
-            masks.maskData(self.parent, self.currentMask, progressBar)
+            masks.maskData(self.parentWidget, self.currentMask, progressBar)
             self.close()
-
-
-
-class matplotlibWidget(FigureCanvas):  #widget to plot image and points inside the dialog and not on a separate window
-
-    def __init__(self):
-
-        self.figure = Figure()
-        super(matplotlibWidget,self).__init__(self.figure)
-
-        self.figure.set_facecolor('none')
-        self.canvas = FigureCanvas(self.figure)
-        self.canvas.setParent(self)
-
-        self.plot = self.figure.add_subplot(111)
-        self.toolbar = matplotlibToolbar(self.canvas, self)
-
-        self.plot.patch.set_facecolor('none')
-
-class matplotlibToolbar(NavigationToolbar):
-
-    def __init__(self, canvas, parent):
-
-        self.toolitems = (('Home', 'Reset original view', 'home', 'home'),('Pan', 'Pan axes with left mouse, zoom with right', 'move', 'pan'),('Zoom', 'Zoom to rectangle', 'zoom_to_rect', 'zoom'))
-
-        super(matplotlibToolbar, self).__init__(canvas, parent)
-        self.setOrientation(Qt.Vertical)
-        self.layout().takeAt(3)
 
 
 def launchMaskDialog(self, currentImage): #initialize the variable and execute the window dialog

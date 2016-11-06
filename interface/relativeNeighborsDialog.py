@@ -11,18 +11,11 @@ More details regarding the project on the GitHub Wiki : https://github.com/Chris
 Current File: This file manages the relative neighbors mask procedure dialog
 """
 
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-import numpy as np, cv2, os, csv, scipy.optimize, copy, time
+import numpy as np, cv2, os, csv, scipy.optimize, copy, time, matplotlib.pyplot as plt, matplotlib.path as mpath
 from functions import getData, masks, DIC_Global
 from interface import progressWidget
-from math import sqrt
-from matplotlib import path as mpath
-from matplotlib import ticker
-import matplotlib.pyplot as plt
-
 
 class RelativeNDialog(QDialog):
 
@@ -59,7 +52,7 @@ class RelativeNDialog(QDialog):
         self.displayXMarkers.stateChanged.connect(self.plotRelativeN)
         self.displayYMarkers.stateChanged.connect(self.plotRelativeN)
 
-        self.plotArea = MatplotlibImageWidget(self)
+        self.plotArea = DIC_Global.matplotlibWidget()
         self.plotArea.setFocusPolicy(Qt.ClickFocus)
         self.plotArea.setFocus()
 
@@ -179,32 +172,32 @@ class RelativeNDialog(QDialog):
 
         plotAsImage, x_min, x_max, y_min, y_max = self.savePlotPng()
 
-        self.plotArea.imagePlot.cla()
+        self.plotArea.matPlot.cla()
         #self.plotArea.figure.tight_layout()
 
         if [y_min, y_max] != [0,0]:
             self.plotArea.mpl_connect('button_press_event', self.on_press)
 
-            self.plotArea.imagePlot.set_frame_on(True)
-            self.plotArea.imagePlot.axis('on')
-            self.plotArea.imagePlot.axes.get_xaxis().set_visible(True)
-            self.plotArea.imagePlot.axes.get_yaxis().set_visible(True)
+            self.plotArea.matPlot.set_frame_on(True)
+            self.plotArea.matPlot.axis('on')
+            self.plotArea.matPlot.axes.get_xaxis().set_visible(True)
+            self.plotArea.matPlot.axes.get_yaxis().set_visible(True)
 
 
-            self.plotArea.imagePlot.imshow(plotAsImage, extent=[x_min+1, x_max+1, y_min, y_max])
+            self.plotArea.matPlot.imshow(plotAsImage, extent=[x_min+1, x_max+1, y_min, y_max])
 
             self.topLimit = np.linspace(y_max/2, y_max/2, num=self.nodesBox.value()) #coordinates of nodes > 0 along the relative displacement axis
             self.bottomLimit = np.linspace(y_min/2, y_min/2, num=self.nodesBox.value()) #coordinates of nodes < 0 along the relative displacement axis
             self.nodeOnImage = np.linspace(1, len(self.imageMatrix[0,:]), num=self.nodesBox.value()) #coordinates of nodes along the image axis
-            self.topLimitLine = self.plotArea.imagePlot.plot(self.nodeOnImage, self.topLimit, '.-', color="red")
-            self.bottomLimitLine = self.plotArea.imagePlot.plot(self.nodeOnImage, self.bottomLimit, '.-', color="red")
+            self.topLimitLine = self.plotArea.matPlot.plot(self.nodeOnImage, self.topLimit, '.-', color="red")
+            self.bottomLimitLine = self.plotArea.matPlot.plot(self.nodeOnImage, self.bottomLimit, '.-', color="red")
             #self.plotArea.imagePlot.set_xlim([1,len(self.imageMatrix[0,:])])
-            self.plotArea.imagePlot.set_xlim([x_min+1, x_max+1])
-            self.plotArea.imagePlot.set_ylim([y_min, y_max])
+            self.plotArea.matPlot.set_xlim([x_min+1, x_max+1])
+            self.plotArea.matPlot.set_ylim([y_min, y_max])
 
             #x0, x1 = self.plotArea.imagePlot.get_xlim()
             #y0, y1 = self.plotArea.imagePlot.get_ylim()
-            self.plotArea.imagePlot.set_aspect((x_max-x_min)/(y_max-y_min))
+            self.plotArea.matPlot.set_aspect((x_max-x_min)/(y_max-y_min))
 
             self.minValue_First.setText(str(self.bottomLimit[0]))
             self.maxValue_First.setText(str(self.topLimit[0]))
@@ -227,7 +220,7 @@ class RelativeNDialog(QDialog):
         colorsY = ['blue', 'cornflowerblue', 'royalblue', 'navy']
 
         self.plotArea.figure.clear()
-        self.plotArea.imagePlot=self.plotArea.figure.add_axes((0.05,0.05,0.95,0.95))
+        self.plotArea.matPlot=self.plotArea.figure.add_axes((0.05,0.05,0.95,0.95))
         activeInstances = self.parent.activeInstances
         gridInstances = self.parent.grid_instances
         nbInstances = len(np.atleast_1d(activeInstances))
@@ -238,32 +231,32 @@ class RelativeNDialog(QDialog):
             if self.displayXMarkers.isChecked():
                 clr = colorsX[instance % 4]
                 lbl = 'Instance '+str(activeInstances[instance])+' - X-Rel. Disp.'
-                self.plotArea.imagePlot.plot(self.imageMatrix[0,:], self.relativeX[instance, 0, :], '-', color=clr, label=lbl)
+                self.plotArea.matPlot.plot(self.imageMatrix[0,:], self.relativeX[instance, 0, :], '-', color=clr, label=lbl)
                 for marker in range(1, nbInstancesMarkers):
-                    self.plotArea.imagePlot.plot(self.imageMatrix[marker,:], self.relativeX[instance, marker, :], '-', color=clr)
+                    self.plotArea.matPlot.plot(self.imageMatrix[marker,:], self.relativeX[instance, marker, :], '-', color=clr)
                 if nbInstancesMarkers > 0:
                     [y_min, y_max] = [min(y_min, np.nanmin(self.relativeX[instance, markerList, :])), max(y_max, np.nanmax(self.relativeX[instance, markerList, :]))]
             if self.displayYMarkers.isChecked():
                 clr = colorsY[instance % 4]
                 lbl = 'Instance '+str(activeInstances[instance])+' - Y-Rel. Disp.'
-                self.plotArea.imagePlot.plot(self.imageMatrix[0,:], self.relativeX[instance, 0, :], '-', color=clr, label=lbl)
+                self.plotArea.matPlot.plot(self.imageMatrix[0,:], self.relativeX[instance, 0, :], '-', color=clr, label=lbl)
                 for marker in range(1, nbInstancesMarkers):
-                    self.plotArea.imagePlot.plot(self.imageMatrix[marker,:], self.relativeY[instance, marker, :], '-', color=clr)
+                    self.plotArea.matPlot.plot(self.imageMatrix[marker,:], self.relativeY[instance, marker, :], '-', color=clr)
                 if nbInstancesMarkers > 0:
                     [y_min, y_max] = [min(y_min, np.nanmin(self.relativeY[instance, markerList, :])), max(y_max, np.nanmax(self.relativeY[instance, markerList, :]))]
         if (self.displayXMarkers.isChecked() or self.displayYMarkers.isChecked()): #plot the legend
-            self.plotArea.imagePlot.legend()
+            self.plotArea.matPlot.legend()
 
         if [y_min, y_max] != [0,0]:
 
-            self.plotArea.imagePlot.set_frame_on(False)
-            self.plotArea.imagePlot.axis('off')
-            self.plotArea.imagePlot.axes.get_xaxis().set_visible(False)
-            self.plotArea.imagePlot.axes.get_yaxis().set_visible(False)
-            self.plotArea.imagePlot.set_xlim([x_min, x_max])
-            self.plotArea.imagePlot.set_ylim([y_min, y_max])
+            self.plotArea.matPlot.set_frame_on(False)
+            self.plotArea.matPlot.axis('off')
+            self.plotArea.matPlot.axes.get_xaxis().set_visible(False)
+            self.plotArea.matPlot.axes.get_yaxis().set_visible(False)
+            self.plotArea.matPlot.set_xlim([x_min, x_max])
+            self.plotArea.matPlot.set_ylim([y_min, y_max])
 
-            self.plotArea.imagePlot.set_aspect((x_max-x_min)/(y_max-y_min))
+            self.plotArea.matPlot.set_aspect((x_max-x_min)/(y_max-y_min))
 
             self.plotArea.figure.savefig('tempRelativ.png', bbox_inches='tight', pad_inches = 0, dpi=self.plotArea.figure.dpi)
 
@@ -450,19 +443,6 @@ class RelativeNDialog(QDialog):
             progressBar = progressWidget.progressBarDialog('Saving masks..')
             masks.maskData(self.parent, currentMask, progressBar)
             self.close()
-
-
-class MatplotlibImageWidget(FigureCanvas):
-
-    def __init__(self, parentWidget):
-        super(MatplotlibImageWidget,self).__init__(Figure())
-        #self.figure = Figure(figsize=(12,3.5))
-        self.figure = Figure()
-        self.figure.set_facecolor('none')
-        self.canvas = FigureCanvas(self.figure)
-        self.imagePlot = self.figure.add_subplot(111)
-        #self.figure.tight_layout()
-
 
 def launchRNDialog(self):
 

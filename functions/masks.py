@@ -116,53 +116,6 @@ def maskData(parentWindow, mask, progressBar=None, dataList=None):
     if progressBar is not None:
         progressBar.currentTitle = 'Applying masks...'
 
-#    if dataList is None:
-#        data_x = parentWindow.data_x
-#        disp_x = parentWindow.disp_x
-#        data_y = parentWindow.data_y
-#        disp_y = parentWindow.disp_y
-#        data_corr = parentWindow.data_corr
-#        data_stdx = parentWindow.data_stdx
-#        data_stdy = parentWindow.data_stdy
-#    else:
-#        data_x = dataList[0]
-#        disp_x = dataList[5]
-#        data_y = dataList[1]
-#        disp_y = dataList[6]
-#        data_corr = dataList[2]
-#        data_stdx = dataList[3]
-#        data_stdy = dataList[4]
-#
-#    markers = 0
-#    rownum = 0
-#    for row in mask:
-#        colnum = 0
-#        for col in row:
-#            if col == 0:
-#                data_x[rownum, colnum] = np.nan
-#                disp_x[rownum, colnum] = np.nan
-#                data_y[rownum, colnum] = np.nan
-#                disp_y[rownum, colnum] = np.nan
-#                data_corr[rownum, colnum] = np.nan
-#                data_stdx[rownum, colnum] = np.nan
-#                data_stdy[rownum, colnum] = np.nan
-#                markers += 1
-#            colnum += 1
-#        rownum += 1
-#
-#    parentWindow.data_x = data_x
-#    parentWindow.disp_x = disp_x
-#    parentWindow.data_y = data_y
-#    parentWindow.disp_y = disp_y
-#    parentWindow.data_corr = data_corr
-#    parentWindow.data_stdx = data_stdx
-#    parentWindow.data_stdy = data_stdy
-
-
-    #parentWindow.parentWindow.devWindow.addInfo(str(markers)+' markers masked.', statusBar=parentWindow.parentWindow.statusBar())
-
-    #parentWindow.currentMask = mask
-
     if dataList is None:
         calculatingThread = DIC_Global.createThread(parentWindow.parentWindow, [parentWindow, progressBar, mask], initData.initPlottedData, signal=1)
         calculatingThread.signal.threadSignal.connect(lambda: newMasksCalculated(parentWindow, progressBar))
@@ -174,21 +127,20 @@ def maskData(parentWindow, mask, progressBar=None, dataList=None):
 
 def newMasksCalculated(parentWindow, progressBar):
 
-    plot3D.plot3D_init(parentWindow.displacementX.dockWidget.plot, parentWindow.xLimit, parentWindow.yLimit, parentWindow.disp_x)
-    plot3D.plot3D_init(parentWindow.displacementY.dockWidget.plot, parentWindow.xLimit, parentWindow.yLimit, parentWindow.disp_y)
-    plot3D.plot3D_init(parentWindow.correlation.dockWidget.plot, parentWindow.xLimit, parentWindow.yLimit, np.array([0,1]))
-    plot2D.plot2D_correlation(parentWindow, parentWindow.correlation2D.dockWidget.figure, parentWindow.correlation2D.dockWidget.plot, parentWindow.xi, parentWindow.yi, parentWindow.zi[0][0])
-    plot3D.plot3D_init(parentWindow.deviationX.dockWidget.plot, parentWindow.xLimit, parentWindow.yLimit, parentWindow.data_stdx)
-    plot3D.plot3D_init(parentWindow.deviationY.dockWidget.plot, parentWindow.xLimit, parentWindow.yLimit, parentWindow.data_stdy)
-    plot2D.plot2D_strain(parentWindow, parentWindow.strain2DX.dockWidget.plot, parentWindow.xi, parentWindow.yi, parentWindow.zi_strainX[0][0], parentWindow.grid_instances, parentWindow.activeInstances, parentWindow.activeMarkers[parentWindow.activeImages[0]], plotFig = parentWindow.strain2DX.dockWidget.figure)
-    plot2D.plot2D_strain(parentWindow, parentWindow.strain2DY.dockWidget.plot, parentWindow.xi, parentWindow.yi, parentWindow.zi_strainY[0][0], parentWindow.grid_instances, parentWindow.activeInstances, parentWindow.activeMarkers[parentWindow.activeImages[0]], plotFig = parentWindow.strain2DY.dockWidget.figure)
-    plot2D.plot2D_displacementDeviation(parentWindow, parentWindow.displacement2D.dockWidget.plot, parentWindow.data_x, parentWindow.data_y, parentWindow.disp_x, parentWindow.disp_y, 0, parentWindow.grid_instances, parentWindow.activeInstances)
+    plot3D.plot3D_init(parentWindow.displacementX.dockWidget.matPlot, parentWindow.xLimit, parentWindow.yLimit, parentWindow.disp_x)
+    plot3D.plot3D_init(parentWindow.displacementY.dockWidget.matPlot, parentWindow.xLimit, parentWindow.yLimit, parentWindow.disp_y)
+    plot3D.plot3D_init(parentWindow.correlation.dockWidget.matPlot, parentWindow.xLimit, parentWindow.yLimit, np.array([0,1]))
+    plot2D.plot2D_correlation(parentWindow, parentWindow.correlation2D.dockWidget.figure, parentWindow.correlation2D.dockWidget.matPlot, parentWindow.xi, parentWindow.yi, parentWindow.zi[0][0])
+    plot3D.plot3D_init(parentWindow.deviationX.dockWidget.matPlot, parentWindow.xLimit, parentWindow.yLimit, parentWindow.data_stdx)
+    plot3D.plot3D_init(parentWindow.deviationY.dockWidget.matPlot, parentWindow.xLimit, parentWindow.yLimit, parentWindow.data_stdy)
+    plot2D.plot2D_strain(parentWindow, parentWindow.strain2DX.dockWidget.matPlot, parentWindow.xi, parentWindow.yi, parentWindow.zi_strainX[0][0], parentWindow.grid_instances, parentWindow.activeInstances, parentWindow.activeMarkers[parentWindow.activeImages[0]], plotFig = parentWindow.strain2DX.dockWidget.figure)
+    plot2D.plot2D_strain(parentWindow, parentWindow.strain2DY.dockWidget.matPlot, parentWindow.xi, parentWindow.yi, parentWindow.zi_strainY[0][0], parentWindow.grid_instances, parentWindow.activeInstances, parentWindow.activeMarkers[parentWindow.activeImages[0]], plotFig = parentWindow.strain2DY.dockWidget.figure)
+    plot2D.plot2D_displacementDeviation(parentWindow, parentWindow.displacement2D.dockWidget.matPlot, parentWindow.data_x, parentWindow.data_y, parentWindow.disp_x, parentWindow.disp_y, 0, parentWindow.grid_instances, parentWindow.activeInstances)
     #plot2D.plot2D_displacementDeviation(parentWindow, parentWindow.deviation2D.dockWidget.plot, parentWindow.data_x, parentWindow.data_y, parentWindow.disp_x, parentWindow.disp_y, 0, parentWindow.grid_instances, parentWindow.activeInstances)
-    plot2D.plot2D_strain(parentWindow, parentWindow.strainX.dockWidget.plot, parentWindow.data_x, 0, parentWindow.disp_x, parentWindow.grid_instances, parentWindow.activeInstances, parentWindow.activeMarkers, refImg=parentWindow.activeImages[0])
-    plot2D.plot2D_strain(parentWindow, parentWindow.strainY.dockWidget.plot, parentWindow.data_y, 0, parentWindow.disp_y,parentWindow.grid_instances, parentWindow.activeInstances, parentWindow.activeMarkers, refImg=parentWindow.activeImages[0])
-    plot2D.plot_TrueStrain(parentWindow, parentWindow.trueStrainX.dockWidget.plot, [parentWindow.strainX_data, parentWindow.trueStrainX.averageImageNb, parentWindow.activeInstances])
-    plot2D.plot_TrueStrain(parentWindow, parentWindow.trueStrainY.dockWidget.plot, [parentWindow.strainY_data, parentWindow.trueStrainY.averageImageNb, parentWindow.activeInstances])
-
+    plot2D.plot2D_strain(parentWindow, parentWindow.strainX.dockWidget.matPlot, parentWindow.data_x, 0, parentWindow.disp_x, parentWindow.grid_instances, parentWindow.activeInstances, parentWindow.activeMarkers, refImg=parentWindow.activeImages[0])
+    plot2D.plot2D_strain(parentWindow, parentWindow.strainY.dockWidget.matPlot, parentWindow.data_y, 0, parentWindow.disp_y,parentWindow.grid_instances, parentWindow.activeInstances, parentWindow.activeMarkers, refImg=parentWindow.activeImages[0])
+    plot2D.plot_TrueStrain(parentWindow, parentWindow.trueStrainX.dockWidget.matPlot, [parentWindow.strainX_data, parentWindow.trueStrainX.averageImageNb, parentWindow.activeInstances])
+    plot2D.plot_TrueStrain(parentWindow, parentWindow.trueStrainY.dockWidget.matPlot, [parentWindow.strainY_data, parentWindow.trueStrainY.averageImageNb, parentWindow.activeInstances])
     for instance in dockWidget.dockPlot.instances:
         instance.dockWidget.draw() #refresh all the plots
 

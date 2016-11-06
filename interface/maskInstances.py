@@ -15,10 +15,7 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 import numpy as np
 from interface import progressWidget
-from functions import masks
-
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
+from functions import masks, DIC_Global
 
 class maskGridInstanceDialog(QDialog):
 
@@ -34,7 +31,7 @@ class maskGridInstanceDialog(QDialog):
         dialogLabel = QLabel('Chose grid instances you want to display on the visualisation panel.')
         dialogLabel.setAlignment(Qt.AlignCenter)
 
-        self.plotArea = MatplotlibImageWidget(self)
+        self.plotArea = DIC_Global.matplotlibWidget()
         self.plotArea.setFocusPolicy(Qt.ClickFocus)
         self.plotArea.setFocus()
 
@@ -114,7 +111,7 @@ class maskGridInstanceDialog(QDialog):
 
     def plotInstances(self):
 
-        self.plotArea.imagePlot.cla()
+        self.plotArea.matPlot.cla()
         self.plotArea.mpl_connect('button_press_event', self.on_press)
 
 
@@ -127,9 +124,9 @@ class maskGridInstanceDialog(QDialog):
 
         for instance in self.instancesList:
             if instance[2] == False:
-                self.plotArea.imagePlot.text(instance[0], instance[1], instance[3], color='red', size=.9*sizeLbl, ha="center", va="center", bbox=dict(boxstyle="circle", ec='r', fc='lightcoral', pad=.5))
+                self.plotArea.matPlot.text(instance[0], instance[1], instance[3], color='red', size=.9*sizeLbl, ha="center", va="center", bbox=dict(boxstyle="circle", ec='r', fc='lightcoral', pad=.5))
             else:
-                self.plotArea.imagePlot.text(instance[0], instance[1], instance[3], color='green', size=1.1*sizeLbl, ha="center", va="center", bbox=dict(boxstyle="circle", ec='g', fc='lightgreen', pad=.5))
+                self.plotArea.matPlot.text(instance[0], instance[1], instance[3], color='green', size=1.1*sizeLbl, ha="center", va="center", bbox=dict(boxstyle="circle", ec='g', fc='lightgreen', pad=.5))
                 activeInstances += 1
 
         self.infoValue.setText(str(activeInstances))
@@ -138,8 +135,8 @@ class maskGridInstanceDialog(QDialog):
         else:
             self.dialogButton.setEnabled(True)
 
-        self.plotArea.imagePlot.set_xlim([self.axesLimit[0], self.axesLimit[1]])
-        self.plotArea.imagePlot.set_ylim([self.axesLimit[3], self.axesLimit[2]])
+        self.plotArea.matPlot.set_xlim([self.axesLimit[0], self.axesLimit[1]])
+        self.plotArea.matPlot.set_ylim([self.axesLimit[3], self.axesLimit[2]])
         self.plotArea.draw_idle()
 
 
@@ -194,15 +191,3 @@ def launchMaskGridDialog(self):
     self.maskInstances.initiateInstances(self.analysisWidget.activeInstances, self.analysisWidget.grid_instances, self.analysisWidget.data_x[:, referenceImage], self.analysisWidget.data_y[:, referenceImage])
 
     self.maskInstances.exec_()
-
-
-class MatplotlibImageWidget(FigureCanvas):
-
-    def __init__(self, parentWidget):
-        super(MatplotlibImageWidget,self).__init__(Figure())
-        #self.figure = Figure(figsize=(12,3.5))
-        self.figure = Figure()
-        self.figure.set_facecolor('none')
-        self.canvas = FigureCanvas(self.figure)
-        self.imagePlot = self.figure.add_subplot(111)
-        self.figure.tight_layout()

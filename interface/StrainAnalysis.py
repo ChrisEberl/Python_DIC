@@ -16,13 +16,13 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from interface import menubar, initApp, progressWidget, controlWidget
 from functions import DIC_Global, getData, initData, masks
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
-import matplotlib.mlab as ml
-from mpl_toolkits.mplot3d import Axes3D
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-from matplotlib import cm
+#from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+#from matplotlib.figure import Figure
+#import matplotlib.pyplot as plt
+#import matplotlib.mlab as ml
+#from mpl_toolkits.mplot3d import Axes3D
+#from mpl_toolkits.axes_grid1 import make_axes_locatable
+#from matplotlib import cm
 import numpy as np
 
 class MainAnalysis(QWidget):
@@ -52,7 +52,6 @@ class MainAnalysis(QWidget):
         self.openingThread.start()
 
     def dataLoaded(self, variables):
-
 
         #remove the progressBar
         self.mainLayout.removeWidget(self.openingBar)
@@ -90,7 +89,6 @@ class MainAnalysis(QWidget):
 
     def createLayout(self):
 
-
         #self.layout = QVBoxLayout() #create main vertical layout
         self.mainLayout.setContentsMargins(0,0,0,0)
 
@@ -127,7 +125,6 @@ class MainAnalysis(QWidget):
         masks.maskData(self, self.currentMask, progressBar)
 
         #self.controlWidget.updateAnalysisInfos()
-
 
 class ResultAnalysis(QWidget):
 

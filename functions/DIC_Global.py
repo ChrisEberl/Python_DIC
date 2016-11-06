@@ -15,20 +15,66 @@ import time, multiprocessing, numpy as np, matplotlib as mpl
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
+from mpl_toolkits.mplot3d import Axes3D
 mpl.rcParams.update({'figure.autolayout': True})
+from interface import dockWidget
 
 class matplotlibWidget(FigureCanvas):
 
-    def __init__(self):
+    def __init__(self, graphType=None, parent=None, toolbar=None):
 
         super(matplotlibWidget,self).__init__(mpl.figure.Figure())
         self.figure = mpl.figure.Figure()
         self.figure.set_facecolor('none')
         self.canvas = FigureCanvas(self.figure)
-        self.matPlot = self.figure.add_subplot(111)
+
+        if parent is not None:
+            self.parentWidget = parent
+
+        if graphType is not None:
+            self.canvas.setParent(self)
+            #initialize the plot for visualisation
+            if graphType == 1: #3D plots
+                self.matPlot = self.figure.add_subplot(111, projection='3d')
+                self.toolbar = matplotlibToolbar(self.canvas, self, plotType='3d')
+            else: #2D plots
+                self.matPlot = self.figure.add_subplot(111)
+                self.matPlot.tick_params(labelsize=9)
+                self.matPlot.locator_params(nbins=6)
+                self.toolbar = matplotlibToolbar(self.canvas, self, toolbar=toolbar)
+        else:
+            self.matPlot = self.figure.add_subplot(111)
+
         self.matPlot.set_aspect('auto')
         self.setContentsMargins(0,0,0,0)
-        self.figure.tight_layout()
+        #self.figure.tight_layout()
+
+class matplotlibToolbar(NavigationToolbar):
+
+    def __init__(self, canvas, parent, plotType=None, toolbar=None):
+
+        self.parent = parent
+        if plotType is not None:
+            self.toolitems = [('Save', 'Save the figure', 'filesave', 'save_figure'),('Parameters', 'Change plot parameters.', 'hand', 'changeParams')]
+        else:
+            self.toolitems = (('Home', 'Reset original view', 'home', 'home'),('Pan', 'Pan axes with left mouse, zoom with right', 'move', 'pan'),('Zoom', 'Zoom to rectangle', 'zoom_to_rect', 'zoom'),('Save', 'Save the figure', 'filesave', 'save_figure'),('Parameters', 'Change plot parameters.', 'hand', 'changeParams'))
+
+        super(matplotlibToolbar, self).__init__(canvas, parent)
+        if toolbar is not None:
+            self.setOrientation(Qt.Horizontal)
+        else:
+            self.setOrientation(Qt.Vertical)
+        if plotType is not None:
+            self.layout().takeAt(2)
+        else:
+            self.layout().takeAt(5)
+
+    def changeParams(self):
+
+        graphDisplay = self.parent.parentWidget.graphDisplay
+        parametersDialog = dockWidget.dockParameters(self.parent, graphDisplay)
+        parametersDialog.exec_()
 
 def createThread(parent, args, function, signal=None): #a signal will be created as long as signal is different from None, callable with thread.signal.threadSignal.emit([]) : [] can contains data to be emitted
 
