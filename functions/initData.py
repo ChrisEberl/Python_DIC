@@ -13,8 +13,8 @@ Current File: This file manages the opened data and initiate variables content a
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-import numpy as np, scipy, time
-from functions import DIC_Global
+import numpy as np, scipy, time, os
+from functions import DIC_Global, getData
 from interface import progressWidget, dockWidget
 
 def initPlottedData(parent, progressBar, currentMask, thread):
@@ -119,6 +119,11 @@ def initPlottedData(parent, progressBar, currentMask, thread):
     parent.zi_strainY = []
     #parent.zi_strainXY = []
 
+    #to register coordinates
+    directory = parent.parentWindow.fileDataPath+'/coordinates/'
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
 
     #MULTIPROCESSING
     PROCESSES = int(parent.parentWindow.profileData['nbProcesses'][parent.parentWindow.currentProfile])
@@ -135,18 +140,24 @@ def initPlottedData(parent, progressBar, currentMask, thread):
                 end = nbActiveImages
             else:
                 end = int((i+1)*nbImageCore)
-            args.append((start,end, data_x[:, activeImages[start:end]], data_y[:, activeImages[start:end]], disp_x[:, activeImages[start:end]], disp_y[:, activeImages[start:end]], parent.data_corr[:, activeImages[start:end]], parent.xi, parent.yi, activeImages, gridInstances, activeInstances, neighbors, data_x_init, data_y_init))
+            args.append((start,end, data_x[:, activeImages[start:end]], data_y[:, activeImages[start:end]], disp_x[:, activeImages[start:end]], disp_y[:, activeImages[start:end]], parent.data_corr[:, activeImages[start:end]], parent.xi, parent.yi, activeImages, gridInstances, activeInstances, neighbors, directory, data_x_init, data_y_init))
 
         result = DIC_Global.createProcess(parent.parentWindow, calculateCoordinates, args, PROCESSES, progressBar, 'Calculating missing coordinates ...')
 
     else:
-        result = calculateCoordinates(0, nbActiveImages, data_x, data_y, disp_x, disp_y, parent.data_corr, parent.xi, parent.yi, activeImages, gridInstances, activeInstances, neighbors, None, None)
+        result = calculateCoordinates(0, nbActiveImages, data_x, data_y, disp_x, disp_y, parent.data_corr, parent.xi, parent.yi, activeImages, gridInstances, activeInstances, neighbors, directory, None, None)
 
     nbInstances = len(np.atleast_1d(activeInstances))
     for instance in range(nbInstances):
         parent.zi.append(result[instance])
         parent.zi_strainX.append(result[nbInstances+instance])
-        parent.zi_strainY.append(result[nbInstances+instance])
+        parent.zi_strainY.append(result[2*nbInstances+instance])
+
+    #openingCoordinates #TESTING
+    tic = time.time()
+    zi, zi_strainX, zi_strainY = openCoordinates(directory, activeInstances, activeImages)
+    final = time.time() - tic
+    print(final)
 
     parent.parentWindow.devWindow.addInfo('Calculation terminated in '+str(time.time()-tic)+' seconds.')
 
@@ -154,13 +165,37 @@ def initPlottedData(parent, progressBar, currentMask, thread):
     thread.signal.threadSignal.emit([])
     return
 
+def openCoordinates(directory, activeInstances, activeImages):
 
-def calculateCoordinates(imageStart, imageEnd, data_x, data_y, disp_x, disp_y, data_corr, xi, yi, activeImages, grid_instances, activeInstances, neighbors, data_x_init, data_y_init, q, pipe):
+    nbInstances = len(np.atleast_1d(activeInstances))
+    nbImages = len(np.atleast_1d(activeImages))
+    zi = []
+    zi_strainX = []
+    zi_strainY = []
+    firstTest = getData.getDataFromFile([directory+'/0_0.csv'], 0)
+    yShape = int(firstTest.shape[1]/3)
+    extractedDataZ = np.zeros((nbImages,firstTest.shape[0], yShape))
+    extractedDataX = np.zeros((nbImages,firstTest.shape[0], yShape))
+    extractedDataY = np.zeros((nbImages,firstTest.shape[0], yShape))
+    for instance in range(nbInstances):
+        for image in range(nbImages):
+            testRead = getData.getDataFromFile([directory+'/'+str(instance)+'_'+str(image)+'.csv'], 0)
+            if testRead is not None:
+                [extractedDataZ[image], extractedDataX[image], extractedDataY[image]] = np.hsplit(testRead, 3)
+            else:
+                return None, None, None
+        zi.append(extractedDataZ)
+        zi_strainX.append(extractedDataX)
+        zi_strainY.append(extractedDataY)
+    return zi, zi_strainX, zi_strainY
+
+def calculateCoordinates(imageStart, imageEnd, data_x, data_y, disp_x, disp_y, data_corr, xi, yi, activeImages, grid_instances, activeInstances, neighbors, directory, data_x_init, data_y_init, q, pipe):
 
     nbImages = imageEnd-imageStart
     nbInstances = len(np.atleast_1d(activeInstances))
     result = np.zeros((3*nbInstances, nbImages, xi.shape[0], yi.shape[0]))
     previousTime = time.time()
+
     for image in range(0, nbImages):
         if pipe is not None:
             currentProgress = image * 100 / nbImages
@@ -225,9 +260,11 @@ def calculateCoordinates(imageStart, imageEnd, data_x, data_y, disp_x, disp_y, d
                 result[nbInstances+instance][image] = scipy.interpolate.griddata((data_x_init[strainCalculated], data_y_init[strainCalculated]), currentStrainXX, (xi[None,:], yi[:,None]), method='cubic')
                 result[2*nbInstances+instance][image] = scipy.interpolate.griddata((data_x_init[strainCalculated], data_y_init[strainCalculated]), currentStrainYY, (xi[None,:], yi[:,None]), method='cubic')
             else:
-                 result[nbInstances+instance][image][0,0] = 99999
-                 result[2*nbInstances+instance][image][0,0] = 99999
+                result[nbInstances+instance][image][0,0] = 99999
+                result[2*nbInstances+instance][image][0,0] = 99999
 
+            coordinates = np.hstack((result[instance][image],result[nbInstances+instance][image], result[2*nbInstances+instance][image]))
+            np.savetxt(directory+str(instance)+'_'+str(imageStart+image)+'.csv', coordinates, fmt='%s', delimiter=',')
 
     if q is not None: #if multiprocessing, results are put in the queue
         q.put(result)
@@ -265,11 +302,7 @@ def calculateNeighbors(activeMarkers, data_x_init, data_y_init, minNeighbors, fi
 
         if progressBar is not None:
             currentProgress = int(markerProcessed * 100 / nbMarkers)
-            currentTime = time.time()
-            if currentTime > previousTime + .05 and currentProgress != previousProgress and currentProgress < 100:
-                previousTime = currentTime
-                previousProgress = currentProgress
-                progressBar.percent = currentProgress
+            progressBar.percent = currentProgress
 
         nbNeighbors = 0
         distance = minDistance

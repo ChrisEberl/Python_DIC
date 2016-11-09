@@ -13,7 +13,7 @@ Current File: This file manages the menubar and create menus and actions
 
 from PyQt4.QtGui import *
 from functions import startOptions, masks
-from interface import profile, dispVsPos, relativeNeighborsDialog, deleteImages, maskInstances, analysisInfos, maskMarkers
+from interface import profile, dispVsPos, relativeNeighborsDialog, deleteImages, maskInstances, analysisInfos, maskMarkers, newNeighbors
 
 def createMenuActions(self):
 
@@ -32,15 +32,16 @@ def createMenuActions(self):
 
     self.manageProfile = QAction('Manage Profiles', self)
 
-    #cleanMenu Actions
+    #maskMenu Actions
     self.maskInstances = QAction('Manage Grids', self)
     self.deleteImages = QAction('Mask Images', self)
     self.deleteMarkers = QAction('Mask Markers', self)
     self.dispPos = QAction('Disp. vs Position', self)
     self.relativeDisp = QAction('Relative Neighbors Disp.', self)
 
-    #infoMenu
+    #moreMenu
     self.analysisInfos = QAction('Analysis Infos', self)
+    self.newNeighborsCalc = QAction('Re-calculate Neighbors', self)
 
 
     #Actions Parameters
@@ -60,6 +61,7 @@ def createMenuActions(self):
     self.dispPos.setStatusTip('Plot displacement versus position and mask selected markers.')
     self.relativeDisp.setStatusTip('Plot relative neighbors displacement over all the images and mask jumpers.')
     self.analysisInfos.setStatusTip('Get detailed informations on the current analysis.')
+    self.newNeighborsCalc.setStatusTip = ('Update the current markers neighbors list.')
 
     #Actions Triggers
     self.newAction.triggered.connect(lambda: startOptions.startNewAnalysis(self))
@@ -74,6 +76,7 @@ def createMenuActions(self):
     self.dispPos.triggered.connect(lambda: dispVsPos.launchDVPDialog(self, int(self.analysisWidget.controlWidget.imageNumber.text())))
     self.relativeDisp.triggered.connect(lambda: relativeNeighborsDialog.launchRNDialog(self))
     self.analysisInfos.triggered.connect(lambda: analysisInfos.launchDialog(self))
+    self.newNeighborsCalc.triggered.connect(lambda: newNeighbors.launchNeighborsDialog(self))
 
     self.manageProfile.triggered.connect(lambda: profile.manageProfile(self))
 
@@ -85,7 +88,7 @@ def createMenu(self):
     #create Menus
     fileMenu = self.menubar.addMenu('File')
     masksMenu = self.menubar.addMenu('Masks')
-    infosMenu = self.menubar.addMenu('Infos')
+    moreMenu = self.menubar.addMenu('More')
 
     createMenuActions(self) #generate Actions with function
 
@@ -121,7 +124,8 @@ def createMenu(self):
     masksMenu.addAction(self.dispPos)
     masksMenu.addAction(self.relativeDisp)
 
-    infosMenu.addAction(self.analysisInfos)
+    moreMenu.addAction(self.analysisInfos)
+    moreMenu.addAction(self.newNeighborsCalc)
 
     #disabled actions
     menuDisabled(self)
@@ -137,6 +141,7 @@ def menuDisabled(parent):
     parent.deleteImages.setDisabled(True)
     parent.maskInstances.setDisabled(True)
     parent.analysisInfos.setDisabled(True)
+    parent.newNeighborsCalc.setDisabled(True)
 
 def menuEnabled(parent): #menu enabled when analysis is open
 
@@ -147,6 +152,7 @@ def menuEnabled(parent): #menu enabled when analysis is open
     parent.deleteImages.setEnabled(True)
     parent.maskInstances.setEnabled(True)
     parent.analysisInfos.setEnabled(True)
+    parent.newNeighborsCalc.setEnabled(True)
 
 def menuCreateGridEnabled(parent): #menu enabled when creating a grid
 
