@@ -166,12 +166,9 @@ class RelativeNDialog(QDialog):
 
         self.setLayout(dialogLayout)
 
-
     def plotRelativeN(self):
 
-
         plotAsImage, x_min, x_max, y_min, y_max = self.savePlotPng()
-
         self.plotArea.matPlot.cla()
         #self.plotArea.figure.tight_layout()
 
@@ -182,7 +179,6 @@ class RelativeNDialog(QDialog):
             self.plotArea.matPlot.axis('on')
             self.plotArea.matPlot.axes.get_xaxis().set_visible(True)
             self.plotArea.matPlot.axes.get_yaxis().set_visible(True)
-
 
             self.plotArea.matPlot.imshow(plotAsImage, extent=[x_min+1, x_max+1, y_min, y_max])
 
@@ -205,7 +201,6 @@ class RelativeNDialog(QDialog):
             self.maxValue_Last.setText(str(self.topLimit[self.nodesBox.value()-1]))
 
         self.plotArea.draw_idle()
-
 
     def savePlotPng(self):
 
@@ -266,7 +261,6 @@ class RelativeNDialog(QDialog):
         self.nbMarkers.setText(str(nbMarkers))
 
         return imageFile, x_min, x_max, y_min, y_max
-
 
     def startCalculation(self, startUp=0):
 
@@ -342,8 +336,6 @@ class RelativeNDialog(QDialog):
                 self.progressBarDialog.percent = int(matrixOrInt)
                 self.progressBarDialog.currentTitle = display
 
-
-
     def coordinatesChanged(self):
 
         toAvoid = ['', '-']
@@ -393,7 +385,6 @@ class RelativeNDialog(QDialog):
             self.selectedNode = closerNode
             self.motionRect = self.plotArea.mpl_connect('motion_notify_event', self.on_motion)
 
-
     def on_motion(self,event):
 
         x1 = event.xdata
@@ -428,7 +419,6 @@ class RelativeNDialog(QDialog):
         self.plotArea.mpl_disconnect(self.motionRect)
         self.plotArea.mpl_disconnect(self.releaseEvent)
 
-
     def deleteSelection(self):
 
         self.parent.parentWindow.devWindow.addInfo('Deleting selected markers..')
@@ -438,27 +428,21 @@ class RelativeNDialog(QDialog):
         for marker in maskedMarkers:
             currentMask[marker,:] = 0
 
-        if masks.generateMask(currentMask, self.parent.parentWindow.fileDataPath) is not None:
+        shouldApplyMask = masks.generateMask(currentMask, self.parent.parentWindow.fileDataPath)
+        if shouldApplyMask is not None:
             self.parent.parentWindow.devWindow.addInfo('Masking selected markers..')
             progressBar = progressWidget.progressBarDialog('Saving masks..')
-            masks.maskData(self.parent, currentMask, progressBar)
+            masks.maskData(self.parent, currentMask, progressBar, toRecalculate=shouldApplyMask)
             self.close()
 
 def launchRNDialog(self):
 
     self.analysisWidget.parentWindow.devWindow.addInfo('Cleaning Procedure Request : Relative Neighbors')
-
-
     self.relativeN = RelativeNDialog(self.analysisWidget)
-
     self.relativeN.startCalculation(startUp = 1)
-
     self.relativeN.exec_()
 
-    #self.relativeN.plotRelativeN()
-
 def newCalculation(disp_x, disp_y, activeImages, activeMarkers, activeInstances, gridInstances, neighbors, iterations, nbNodes, nodeOnImage, topLimitV, bottomLimitV, relativeX, relativeY, thread):
-
 
     imageMatrix = 0
     refImg = activeImages[0]
@@ -471,7 +455,6 @@ def newCalculation(disp_x, disp_y, activeImages, activeMarkers, activeInstances,
         alongX = False
     if relativeY is None:
         alongY = False
-
 
     for i in range(iterations):
 
@@ -516,10 +499,7 @@ def newCalculation(disp_x, disp_y, activeImages, activeMarkers, activeInstances,
             else:
                 reachTarget = 1
             break
-
-
     thread.signal.threadSignal.emit([imageMatrix, relativeX, relativeY, activeMarkers, reachTarget])
-
 
 def calculateOutsiders(disp_x, disp_y, activeImages, activeMarkers, activeInstances, gridInstances, neighbors, thread, iteration=0, totalIteration=1, startUp=1):
 
@@ -562,7 +542,6 @@ def calculateOutsiders(disp_x, disp_y, activeImages, activeMarkers, activeInstan
             old_percent = percent
 
         imageMatrix[:,imageNb] = imageNb*imageMatrix[:,imageNb]
-
 
     if startUp < 1:
         return imageMatrix, relativeDispX, relativeDispY

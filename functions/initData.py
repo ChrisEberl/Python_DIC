@@ -17,7 +17,7 @@ import numpy as np, scipy, time, os
 from functions import DIC_Global, getData
 from interface import progressWidget, dockWidget
 
-def initPlottedData(parent, progressBar, currentMask, thread):
+def initPlottedData(parent, progressBar, currentMask, toRecalculate, thread):
 
     tic = time.time()
 
@@ -114,82 +114,92 @@ def initPlottedData(parent, progressBar, currentMask, thread):
     parent.xi = np.linspace(minCoordX, maxCoordX, 100)
     parent.yi = np.linspace(minCoordY, maxCoordY, 100)
 
-    parent.zi = []
-    parent.zi_strainX = []
-    parent.zi_strainY = []
-    #parent.zi_strainXY = []
-
     #to register coordinates
-    directory = parent.parentWindow.fileDataPath+'/coordinates/'
-    if not os.path.exists(directory):
-        os.makedirs(directory)
+    directory = parent.parentWindow.fileDataPath
 
+    if toRecalculate is None:
+        progressBar.currentTitle = 'Opening coordinates...'
+        zi, zi_strainX, zi_strainY = openCoordinates(directory, nbInstances, nbActiveImages)
+        if zi is not None:
+            parent.zi = zi
+            parent.zi_strainX = zi_strainX
+            parent.zi_strainY = zi_strainY
+            toRecalculate = [False, False, False]
+        else:
+            toRecalculate = [True, True, True]
 
-    #MULTIPROCESSING
-    PROCESSES = int(parent.parentWindow.profileData['nbProcesses'][parent.parentWindow.currentProfile])
-    if PROCESSES > 0:
-        args = []
-        nbImageCore = nbActiveImages/PROCESSES
-        if nbImageCore < 2:
-            nbImageCore = 2
-            PROCESSES = nbActiveImages/2+1
-        parent.parentWindow.devWindow.addInfo('Starting calculation with '+str(PROCESSES)+' processes.')
-        for i in range (0, PROCESSES):
-            start = int(i*nbImageCore)
-            if i >= PROCESSES-1: #last process do all the last images
-                end = nbActiveImages
-            else:
-                end = int((i+1)*nbImageCore)
-            args.append((start,end, data_x[:, activeImages[start:end]], data_y[:, activeImages[start:end]], disp_x[:, activeImages[start:end]], disp_y[:, activeImages[start:end]], parent.data_corr[:, activeImages[start:end]], parent.xi, parent.yi, activeImages, gridInstances, activeInstances, neighbors, directory, data_x_init, data_y_init))
+    if sum(toRecalculate) > 0:
+        #MULTIPROCESSING
+        PROCESSES = int(parent.parentWindow.profileData['nbProcesses'][parent.parentWindow.currentProfile])
+        if PROCESSES > 0:
+            args = []
+            nbImageCore = nbActiveImages/PROCESSES
+            if nbImageCore < 2:
+                nbImageCore = 2
+                PROCESSES = nbActiveImages/2+1
+            parent.parentWindow.devWindow.addInfo('Starting calculation with '+str(PROCESSES)+' processes.')
+            for i in range (0, PROCESSES):
+                start = int(i*nbImageCore)
+                if i >= PROCESSES-1: #last process do all the last images
+                    end = nbActiveImages
+                else:
+                    end = int((i+1)*nbImageCore)
+                args.append((start,end, data_x[:, activeImages[start:end]], data_y[:, activeImages[start:end]], disp_x[:, activeImages[start:end]], disp_y[:, activeImages[start:end]], parent.data_corr[:, activeImages[start:end]], parent.xi, parent.yi, activeImages, gridInstances, activeInstances, neighbors, directory, data_x_init, data_y_init, toRecalculate))
 
-        result = DIC_Global.createProcess(parent.parentWindow, calculateCoordinates, args, PROCESSES, progressBar, 'Calculating missing coordinates ...')
+            result = DIC_Global.createProcess(parent.parentWindow, calculateCoordinates, args, PROCESSES, progressBar, 'Calculating missing coordinates ...')
 
-    else:
-        result = calculateCoordinates(0, nbActiveImages, data_x, data_y, disp_x, disp_y, parent.data_corr, parent.xi, parent.yi, activeImages, gridInstances, activeInstances, neighbors, directory, None, None)
+        else:
+            result = calculateCoordinates(0, nbActiveImages, data_x, data_y, disp_x, disp_y, parent.data_corr, parent.xi, parent.yi, activeImages, gridInstances, activeInstances, neighbors, directory, None, None, toRecalculate)
 
-    nbInstances = len(np.atleast_1d(activeInstances))
-    for instance in range(nbInstances):
-        parent.zi.append(result[instance])
-        parent.zi_strainX.append(result[nbInstances+instance])
-        parent.zi_strainY.append(result[2*nbInstances+instance])
+        if toRecalculate[0]:
+            parent.zi = []
+        if toRecalculate[1]:
+            parent.zi_strainX = []
+        if toRecalculate[2]:
+            parent.zi_strainY = []
+        nbInstances = len(np.atleast_1d(activeInstances))
+        for instance in range(nbInstances):
+            if toRecalculate[0]:
+                parent.zi.append(result[instance])
+            if toRecalculate[1]:
+                parent.zi_strainX.append(result[nbInstances+instance])
+            if toRecalculate[2]:
+                parent.zi_strainY.append(result[2*nbInstances+instance])
 
-    #openingCoordinates #TESTING
-    tic = time.time()
-    zi, zi_strainX, zi_strainY = openCoordinates(directory, activeInstances, activeImages)
-    final = time.time() - tic
-    print(final)
+        #saving Coordinates
+        progressBar.currentTitle = "Saving coordinates..."
+        coordinates = np.zeros((100*nbActiveImages,3*100*nbInstances))
+        for instance in range(nbInstances):
+            for image in range(nbActiveImages):
+                image_coordinates = np.hstack((result[instance][image],result[nbInstances+instance][image], result[2*nbInstances+instance][image]))
+                coordinates[100*image:100*(image+1),3*instance*100:3*(instance+1)*100] = image_coordinates
+        np.savetxt(directory+'/coordinates.csv', coordinates, fmt='%s', delimiter=',')
 
     parent.parentWindow.devWindow.addInfo('Calculation terminated in '+str(time.time()-tic)+' seconds.')
-
-
     thread.signal.threadSignal.emit([])
     return
 
-def openCoordinates(directory, activeInstances, activeImages):
+def openCoordinates(directory, nbInstances, nbImages):
 
-    nbInstances = len(np.atleast_1d(activeInstances))
-    nbImages = len(np.atleast_1d(activeImages))
     zi = []
     zi_strainX = []
     zi_strainY = []
-    firstTest = getData.getDataFromFile([directory+'/0_0.csv'], 0)
-    yShape = int(firstTest.shape[1]/3)
-    extractedDataZ = np.zeros((nbImages,firstTest.shape[0], yShape))
-    extractedDataX = np.zeros((nbImages,firstTest.shape[0], yShape))
-    extractedDataY = np.zeros((nbImages,firstTest.shape[0], yShape))
-    for instance in range(nbInstances):
-        for image in range(nbImages):
-            testRead = getData.getDataFromFile([directory+'/'+str(instance)+'_'+str(image)+'.csv'], 0)
-            if testRead is not None:
-                [extractedDataZ[image], extractedDataX[image], extractedDataY[image]] = np.hsplit(testRead, 3)
-            else:
+    coordinatesFile = getData.getDataFromFile([directory+'/coordinates.csv'], 0)
+    if coordinatesFile is not None:
+        instanceCoordinates = np.hsplit(coordinatesFile, nbInstances)
+        for instance in range(nbInstances):
+            try:
+                imageCoordinates = np.asarray(np.vsplit(instanceCoordinates[instance], nbImages))
+            except:
                 return None, None, None
-        zi.append(extractedDataZ)
-        zi_strainX.append(extractedDataX)
-        zi_strainY.append(extractedDataY)
-    return zi, zi_strainX, zi_strainY
+            zi.append(imageCoordinates[:,:,0:100])
+            zi_strainX.append(imageCoordinates[:,:,100:200])
+            zi_strainY.append(imageCoordinates[:,:,200:300])
+        return zi, zi_strainX, zi_strainY
+    else:
+        return None, None, None
 
-def calculateCoordinates(imageStart, imageEnd, data_x, data_y, disp_x, disp_y, data_corr, xi, yi, activeImages, grid_instances, activeInstances, neighbors, directory, data_x_init, data_y_init, q, pipe):
+def calculateCoordinates(imageStart, imageEnd, data_x, data_y, disp_x, disp_y, data_corr, xi, yi, activeImages, grid_instances, activeInstances, neighbors, directory, data_x_init, data_y_init, toRecalculate, q, pipe):
 
     nbImages = imageEnd-imageStart
     nbInstances = len(np.atleast_1d(activeInstances))
@@ -216,7 +226,8 @@ def calculateCoordinates(imageStart, imageEnd, data_x, data_y, disp_x, disp_y, d
                 continue
             #CORRELATION 2D
             data_corr_clean = data_corr[instanceMarkers, currentImage]
-            result[instance][image] = scipy.interpolate.griddata((data_x_init[instanceMarkers], data_y_init[instanceMarkers]), data_corr_clean, (xi[None,:], yi[:,None]), method='cubic')
+            if toRecalculate[0] is True:
+                result[instance][image] = scipy.interpolate.griddata((data_x_init[instanceMarkers], data_y_init[instanceMarkers]), data_corr_clean, (xi[None,:], yi[:,None]), method='cubic')
 
             ## 2D STRAIN ##
             currentStrainXX = []
@@ -237,12 +248,16 @@ def calculateCoordinates(imageStart, imageEnd, data_x, data_y, disp_x, disp_y, d
                     #2n Order
                     A = np.c_[np.ones(matrixDataX.shape[0]), matrixDataX[:,:2], np.prod(matrixDataX[:,:2], axis=1), matrixDataX[:,:2]**2]
                     B = np.c_[np.ones(matrixDataY.shape[0]), matrixDataY[:,:2], np.prod(matrixDataY[:,:2], axis=1), matrixDataY[:,:2]**2]
-                    C,_,_,_ = scipy.linalg.lstsq(A, matrixDataX[:,2]) # Z = C[4]*X**2. + C[5]*Y**2. + C[3]*X*Y + C[1]*X + C[2]*Y + C[0]
-                    D,_,_,_ = scipy.linalg.lstsq(B, matrixDataY[:,2])
-                    resultStrainXX = 2*C[4]*data_x_current[marker]+C[1]+C[3]*data_y_current[marker]
-                    resultStrainXY = 2*C[5]*data_y_current[marker]+C[2]+C[3]*data_x_current[marker]
-                    resultStrainYY = 2*D[4]*data_y_current[marker]+D[1]+D[3]*data_x_current[marker]
-                    resultStrainYX = 2*D[5]*data_x_current[marker]+D[2]+D[3]*data_y_current[marker]
+                    if toRecalculate[1]:
+                        C,_,_,_ = scipy.linalg.lstsq(A, matrixDataX[:,2]) # Z = C[4]*X**2. + C[5]*Y**2. + C[3]*X*Y + C[1]*X + C[2]*Y + C[0]
+                        resultStrainXX = 2*C[4]*data_x_current[marker]+C[1]+C[3]*data_y_current[marker]
+                        currentStrainXX.append(resultStrainXX)
+                    if toRecalculate[2]:
+                        D,_,_,_ = scipy.linalg.lstsq(B, matrixDataY[:,2])
+                        resultStrainYY = 2*D[4]*data_y_current[marker]+D[1]+D[3]*data_x_current[marker]
+                        currentStrainYY.append(resultStrainYY)
+                    #resultStrainXY = 2*C[5]*data_y_current[marker]+C[2]+C[3]*data_x_current[marker]
+                    #resultStrainYX = 2*D[5]*data_x_current[marker]+D[2]+D[3]*data_y_current[marker]
                     #1rst Order #NON-TESTED
     #                A = np.c_[data[:,0], data[:,1], np.ones(data.shape[0])]
     #                C,_,_,_ = scipy.linalg.lstsq(A, data[:,2])
@@ -250,21 +265,18 @@ def calculateCoordinates(imageStart, imageEnd, data_x, data_y, disp_x, disp_y, d
     #                resultStrainXY = C[1]
     #                resultStrainYY = D[0]
     #                resultStrainYX = D[1]
-                    currentStrainXX.append(resultStrainXX)
-                    currentStrainXY.append(resultStrainXY)
-                    currentStrainYY.append(resultStrainYY)
-                    currentStrainYX.append(resultStrainYX)
+                    #currentStrainXY.append(resultStrainXY)
+                    #currentStrainYX.append(resultStrainYX)
                     strainCalculated.append(marker)
 
             if len(np.atleast_1d(strainCalculated)) > 3:
-                result[nbInstances+instance][image] = scipy.interpolate.griddata((data_x_init[strainCalculated], data_y_init[strainCalculated]), currentStrainXX, (xi[None,:], yi[:,None]), method='cubic')
-                result[2*nbInstances+instance][image] = scipy.interpolate.griddata((data_x_init[strainCalculated], data_y_init[strainCalculated]), currentStrainYY, (xi[None,:], yi[:,None]), method='cubic')
+                if toRecalculate[1] is True:
+                    result[nbInstances+instance][image] = scipy.interpolate.griddata((data_x_init[strainCalculated], data_y_init[strainCalculated]), currentStrainXX, (xi[None,:], yi[:,None]), method='cubic')
+                if toRecalculate[2] is True:
+                    result[2*nbInstances+instance][image] = scipy.interpolate.griddata((data_x_init[strainCalculated], data_y_init[strainCalculated]), currentStrainYY, (xi[None,:], yi[:,None]), method='cubic')
             else:
                 result[nbInstances+instance][image][0,0] = 99999
                 result[2*nbInstances+instance][image][0,0] = 99999
-
-            coordinates = np.hstack((result[instance][image],result[nbInstances+instance][image], result[2*nbInstances+instance][image]))
-            np.savetxt(directory+str(instance)+'_'+str(imageStart+image)+'.csv', coordinates, fmt='%s', delimiter=',')
 
     if q is not None: #if multiprocessing, results are put in the queue
         q.put(result)

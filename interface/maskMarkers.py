@@ -91,16 +91,13 @@ class deleteMarkersDialog(QDialog):
 
         self.setLayout(dialogLayout)
 
-
         #init Plot
         self.unselectedMarkersPlot = []
         self.selectedMarkersPlot = []
         self.arrowsPlot = []
         self.selectMarkers(firstStart=1)
 
-
     def selectMarkers(self, firstStart=0):
-
 
         self.firstClic = 0
         self.plotArea.canvas.mpl_connect('button_release_event', self.on_release)
@@ -243,7 +240,6 @@ class deleteMarkersDialog(QDialog):
         if isValidEvent is True:
             self.selectMarkers()
 
-
     def selectRectangleMarkers(self, x0, y0, width, height): #when an area is selected, select all the markers inside
 
         value = self.activeImages[self.imageSelectSpinBox.value()-1]
@@ -272,19 +268,17 @@ class deleteMarkersDialog(QDialog):
 
         self.selectMarkers() #refresh the canvas which selected markers
 
-
     def maskSelection(self): #when the selection is done and 'Delete' button clicked, remove all selected markers on all images
 
-        if masks.generateMask(self.currentMask, self.fileDataPath) is not None:
+        shouldApplyMask = masks.generateMask(self.currentMask, self.fileDataPath)
+        if shouldApplyMask is not None:
             self.parentWidget.parentWindow.devWindow.addInfo('Deleting selected markers..')
             progressBar = progressWidget.progressBarDialog('Saving masks..')
-            masks.maskData(self.parentWidget, self.currentMask, progressBar)
+            masks.maskData(self.parentWidget, self.currentMask, progressBar, toRecalculate=shouldApplyMask)
             self.close()
-
 
 def launchMaskDialog(self, currentImage): #initialize the variable and execute the window dialog
 
     self.analysisWidget.parentWindow.devWindow.addInfo('Cleaning Procedure Request : Mask Markers.')
-
     deleteMarkers = deleteMarkersDialog(self.analysisWidget, currentImage)
     deleteMarkers.exec_()

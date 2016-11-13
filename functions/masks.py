@@ -28,16 +28,20 @@ def generateMask(mask, path, fileName=None, confirmDialog=True):
 
     if result == 1:
         #Save mask file into log folder
+        if confirmDialog is True:
+            recalculateCoordinates = [confirmDialog.corrBox.isChecked(), confirmDialog.xStrainBox.isChecked(), confirmDialog.yStrainBox.isChecked()]
+        else:
+            recalculateCoordinates = [True, True, True]
         currentTime = time.localtime()
         if fileName is None:
             fileName=str(currentTime[0])+'_'+str(currentTime[1])+'_'+str(currentTime[2])+'_'+str(currentTime[3])+str(currentTime[4])+str(currentTime[5])+'.dat'
         directory = path+'/log/'
         if not os.path.exists(directory):
             os.makedirs(directory)
-            np.savetxt(directory+'Original.dat', np.ones_like(mask), fmt='%1d')
+            np.savetxt(directory+'Original.dat', np.ones_like(mask), fmt='%1d', delimiter=',')
 
-        np.savetxt(directory+fileName, mask, fmt='%1d')
-        return 'OK'
+        np.savetxt(directory+fileName, mask, fmt='%1d', delimiter=',')
+        return recalculateCoordinates
     else:
         return None
 
@@ -56,20 +60,15 @@ class confirmMask(QDialog):
         infoLbl = QLabel('Re-calculate coordinates:')
 
         checkBoxLayout = QHBoxLayout()
-        corrBox = QCheckBox('Correlation 2D')
-        xStrainBox = QCheckBox('2D Local Strain (X)')
-        yStrainBox = QCheckBox('2D Local Strain (Y)')
-        corrBox.setChecked(True)
-        xStrainBox.setChecked(True)
-        yStrainBox.setChecked(True)
-        #temp
-        corrBox.setDisabled(True)
-        xStrainBox.setDisabled(True)
-        yStrainBox.setDisabled(True)
-        #end temp
-        checkBoxLayout.addWidget(corrBox)
-        checkBoxLayout.addWidget(xStrainBox)
-        checkBoxLayout.addWidget(yStrainBox)
+        self.corrBox = QCheckBox('Correlation 2D')
+        self.xStrainBox = QCheckBox('2D Local Strain (X)')
+        self.yStrainBox = QCheckBox('2D Local Strain (Y)')
+        self.corrBox.setChecked(True)
+        self.xStrainBox.setChecked(True)
+        self.yStrainBox.setChecked(True)
+        checkBoxLayout.addWidget(self.corrBox)
+        checkBoxLayout.addWidget(self.xStrainBox)
+        checkBoxLayout.addWidget(self.yStrainBox)
 
         buttonLayout = QHBoxLayout()
         cancelButton = QPushButton('Select more markers')
@@ -85,14 +84,11 @@ class confirmMask(QDialog):
         cancelButton.clicked.connect(self.reject)
         confirmButton.clicked.connect(self.accept)
 
-
         dialogLayout.addWidget(questionLbl)
         dialogLayout.addWidget(infoLbl)
         dialogLayout.addLayout(checkBoxLayout)
         dialogLayout.addLayout(buttonLayout)
         self.setLayout(dialogLayout)
-
-
 
 def renameMask(parent, name):
 
@@ -111,18 +107,14 @@ def renameMask(parent, name):
             parent.analysisWidget.controlWidget.currentVersion.setText(newName)
 
 
-def maskData(parentWindow, mask, progressBar=None, dataList=None):
+def maskData(parentWindow, mask, progressBar=None, dataList=None, toRecalculate=None):
 
     if progressBar is not None:
         progressBar.currentTitle = 'Applying masks...'
 
-    if dataList is None:
-        calculatingThread = DIC_Global.createThread(parentWindow.parentWindow, [parentWindow, progressBar, mask], initData.initPlottedData, signal=1)
-        calculatingThread.signal.threadSignal.connect(lambda: newMasksCalculated(parentWindow, progressBar))
-        calculatingThread.start()
-    else:
-        parentWindow.grid_instances = dataList[11]
-        initData.initPlottedData(parentWindow, progressBar, mask, dataList[13])
+    calculatingThread = DIC_Global.createThread(parentWindow.parentWindow, [parentWindow, progressBar, mask, toRecalculate], initData.initPlottedData, signal=1)
+    calculatingThread.signal.threadSignal.connect(lambda: newMasksCalculated(parentWindow, progressBar))
+    calculatingThread.start()
 
 
 def newMasksCalculated(parentWindow, progressBar):
@@ -150,20 +142,6 @@ def newMasksCalculated(parentWindow, progressBar):
     #progressBar.changeValue(100, '-')
     parentWindow.resultAnalysis.graphRefresh(imageValue=0)
 
-#def getMask(data):
-#
-#    currentMask = np.ones((len(data),len(data[0,:])))
-#    rownum = 0
-#    for row in data:
-#        colnum = 0
-#        for col in row:
-#            if np.isnan(data[rownum,colnum]):
-#                currentMask[rownum,colnum] = 0
-#            colnum += 1
-#        rownum += 1
-#
-#    return currentMask
-
 def openMask(parent, maskName = 0, getNbMasks = 0):
 
     dirpath = parent.fileDataPath+'/log'
@@ -182,7 +160,6 @@ def openMask(parent, maskName = 0, getNbMasks = 0):
         else:
             if getNbMasks > 0:
                 return 1
-
     else:
         filePath = maskName
         currentMask = getData.testReadFile(filePath)
@@ -196,24 +173,24 @@ def openMask(parent, maskName = 0, getNbMasks = 0):
 
 def openMaskRequest(parent):
 
-    filePathTest, _ = QFileDialog.getOpenFileName(parent, 'Select the mask file', '', 'Dat Files (*.dat)')
+    filePathTest = QFileDialog.getOpenFileName(parent, 'Select the mask file', '', 'Dat Files (*.dat)')
     if filePathTest == '':
         return
     else: #open the mask
         newMask = openMask(parent, maskName = filePathTest)
         progressBar = progressWidget.progressBarDialog('Saving masks..')
-        if generateMask(newMask, parent.fileDataPath, fileName=os.path.basename(filePathTest), confirmDialog=False) == 'OK':
-            #maskData(parent.analysisWidget, newMask, progressBar)
-            openingThread = parent.createThread([parent, progressBar, newMask], fileOpenedForImportation, signal=1)
-            openingThread.signal.threadSignal.connect(lambda: newMasksCalculated(parent.analysisWidget, progressBar))
-            openingThread.start()
+        if generateMask(newMask, parent.fileDataPath, fileName=os.path.basename(filePathTest), confirmDialog=False) is not None:
+            maskData(parent.analysisWidget, newMask, progressBar, toRecalculate=[True, True, True])
+            #openingThread = DIC_Global.createThread(parent, [parent, progressBar, newMask], fileOpenedForImportation, signal=1)
+            #openingThread.signal.threadSignal.connect(lambda: newMasksCalculated(parent.analysisWidget, progressBar))
+            #openingThread.start()
 
 def fileOpenedForImportation(parent, progressBar, newMask, thread):
 
     dataList = getData.generateData(parent, progressBar)
     if dataList is not None:
         dataList += (thread, ) #we put the thread in the dataList to use the signal in initData.initPlottedData
-        maskData(parent.analysisWidget, newMask, progressBar, dataList)
+        maskData(parent.analysisWidget, newMask, progressBar, dataList, )
 #
 #def cleanedData(data):
 #

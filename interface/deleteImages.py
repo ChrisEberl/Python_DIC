@@ -66,7 +66,6 @@ class deleteImageDialog(QDialog):
 
     def deleteSelection(self, currentMask, activeImages, parent):
 
-
         selectedItems = self.dialogListWidget.selectedItems()
         nbSelected = len(selectedItems)
         if nbSelected > 0:
@@ -77,25 +76,19 @@ class deleteImageDialog(QDialog):
 
             currentMask[:, np.array(activeImages)[indicesToDelete]] = 0
 
-            if masks.generateMask(currentMask, parent.parentWindow.fileDataPath) is not None:
+            shouldApplyMask = masks.generateMask(currentMask, parent.parentWindow.fileDataPath)
+            if shouldApplyMask is not None:
                 progressBar = progressWidget.progressBarDialog('Saving masks..')
-                masks.maskData(parent, currentMask, progressBar)
+                masks.maskData(parent, currentMask, progressBar, toRecalculate = shouldApplyMask)
                 self.close()
-
 
     def refreshLbl(self):
 
         nbSelected = len(self.dialogListWidget.selectedItems())
         self.selectedValueLbl.setText(str(nbSelected))
 
-
-
 def launchDeleteImageDialog(self):
 
     self.analysisWidget.parentWindow.devWindow.addInfo('Cleaning Procedure Request : Delete Images')
-
-
     self.deleteImg = deleteImageDialog(self.analysisWidget.fileNameList, self.analysisWidget.activeImages, self.analysisWidget)
-
-
     self.deleteImg.exec_()

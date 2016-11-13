@@ -16,7 +16,6 @@ import numpy as np, copy, matplotlib.patches as mpp
 from functions import masks, DIC_Global
 from interface import progressWidget
 
-
 class dispVsPosDialog(QDialog):
 
     def __init__(self, parent, currentImage): #initiate the main layout
@@ -155,18 +154,15 @@ class dispVsPosDialog(QDialog):
                     minLimit = min(np.min(disp_y_init[instanceMarkers]), minLimit)
                     maxLimit = max(np.max(disp_y_init[instanceMarkers]), maxLimit)
 
-
         if minLimit != maxLimit:
             self.plotArea.matPlot.set_ylim([minLimit-.1*np.absolute(minLimit),maxLimit+.1*np.absolute(maxLimit)]) # 10% extra to be able to select all markers
         else:
             self.plotArea.matPlot.set_ylim([-1,1])
 
-
         if (self.displayXMarkers.isChecked() or self.displayYMarkers.isChecked()) and (plotXFit is not None or plotYFit is not None): #plot the legend
             self.plotArea.matPlot.legend()
 
         self.plotArea.draw_idle() #refresh the area
-
 
     def selectRectangleMarkers(self, x0, y0, width, height): #when a rectangle is drawn, select all the markers inside
 
@@ -213,8 +209,6 @@ class dispVsPosDialog(QDialog):
                                 self.currentMask[i, value] = 1
 
         self.plotDispersion()
-
-
 
     def on_press(self, event):
         self.x0 = event.xdata
@@ -282,13 +276,13 @@ class dispVsPosDialog(QDialog):
         if isValidEvent is True:
             self.plotDispersion()
 
-
     def maskSelection(self): #deleted the different selected markers
 
-        if masks.generateMask(self.currentMask, self.fileDataPath) is not None:
+        shouldApplyMask = masks.generateMask(self.currentMask, self.fileDataPath)
+        if shouldApplyMask is not None:
             self.parent.parentWindow.devWindow.addInfo('Masking selected markers..')
             progressBar = progressWidget.progressBarDialog('Saving masks..')
-            masks.maskData(self.parent, self.currentMask, progressBar)
+            masks.maskData(self.parent, self.currentMask, progressBar, toRecalculate=shouldApplyMask)
             self.close()
 
 def launchDVPDialog(self, currentImage): #initiate the variables and launch the dialog
