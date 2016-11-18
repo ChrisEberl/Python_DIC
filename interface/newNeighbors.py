@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on 08/09/2016
+Created on 08/11/2016
 
 @author: Charlie Bourigault
 @contact: bourigault.charlie@gmail.com
@@ -13,7 +13,7 @@ Current File: Allows the user to re-calculate the current grid neighbors
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-import numpy as np
+import numpy as np, time
 from interface import progressWidget
 from functions import initData
 
@@ -27,12 +27,8 @@ class newNeighborsDialog(QDialog):
         self.setMinimumWidth(600)
 
         nbNeighbors = len(parent.neighbors[0])
-        activeMarkers = []
-        for image in parent.activeMarkers:
-            for marker in image:
-                if marker not in activeMarkers:
-                    activeMarkers.append(marker)
-        nbActiveMarkers = len(np.atleast_1d(activeMarkers))
+        listMarkers = np.linspace(0, parent.nb_marker, parent.nb_marker, endpoint=False)
+        nbMarkers = len(np.atleast_1d(listMarkers))
 
         dialogLayout = QVBoxLayout()
 
@@ -43,39 +39,45 @@ class newNeighborsDialog(QDialog):
         self.nbNeighbors = QSpinBox()
         self.nbNeighbors.setMaximumWidth(200)
         self.nbNeighbors.setValue(nbNeighbors)
-        self.nbNeighbors.setRange(1, nbActiveMarkers)
+        self.nbNeighbors.setRange(1, nbMarkers)
         spinBoxLayout.addStretch(1)
         spinBoxLayout.addWidget(self.nbNeighbors)
         spinBoxLayout.addStretch(1)
 
         dialogButtonLayout = QHBoxLayout()
         self.dialogButton = QPushButton('Start')
-        self.dialogButton.setMaximumWidth(100)
-        self.dialogButton.clicked.connect(lambda: self.startCalculation(parent, activeMarkers))
+        self.dialogButton.setMaximumWidth(200)
+        self.dialogButton.clicked.connect(lambda: self.startCalculation(parent, listMarkers))
         dialogButtonLayout.addStretch(1)
         dialogButtonLayout.addWidget(self.dialogButton)
         dialogButtonLayout.addStretch(1)
 
-        self.dialogProgress = progressWidget.progressBarWidget(minimumHeight=20, maximumHeight=30, minimumWidth=500, maximumWidth=500)
+        dialogProgressLayout = QHBoxLayout()
+        self.dialogProgress = progressWidget.progressBarWidget(minimumHeight=20, maximumHeight=30, minimumWidth=200, maximumWidth=200)
+        dialogProgressLayout.addStretch(1)
+        dialogProgressLayout.addWidget(self.dialogProgress)
+        dialogProgressLayout.addStretch(1)
 
         dialogLayout.addWidget(dialogLabel)
         dialogLayout.addLayout(spinBoxLayout)
         dialogLayout.addLayout(dialogButtonLayout)
-        dialogLayout.addWidget(self.dialogProgress)
+        dialogLayout.addLayout(dialogProgressLayout)
 
         self.setLayout(dialogLayout)
 
-    def startCalculation(self, parent, activeMarkers):
+    def startCalculation(self, parent, listMarkers):
 
         self.dialogButton.setText('Calculating..')
         firstImage = parent.activeImages[0]
         data_x_init = parent.data_x[:,firstImage]
         data_y_init = parent.data_y[:,firstImage]
         minNeighbors = int(self.nbNeighbors.value())
-        neighbors = initData.calculateNeighbors(activeMarkers, data_x_init, data_y_init, minNeighbors, parent.parentWindow.fileDataPath, progressBar=self.dialogProgress)
+        neighbors = initData.calculateNeighbors(listMarkers, data_x_init, data_y_init, minNeighbors, parent.parentWindow.fileDataPath, progressBar=self.dialogProgress)
         parent.neighbors = neighbors
-        self.dialogButton.setText('Done.')
+        self.dialogButton.setText('Done. Closing..')
         self.dialogButton.setDisabled(True)
+        QTimer.singleShot(1500, self.close)
+
 
 def launchNeighborsDialog(self):
 

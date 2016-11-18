@@ -13,7 +13,7 @@ Current File: This file manages the menubar and create menus and actions
 
 from PyQt4.QtGui import *
 from functions import startOptions, masks
-from interface import profile, dispVsPos, relativeNeighborsDialog, deleteImages, maskInstances, analysisInfos, maskMarkers, newNeighbors
+from interface import profile, dispVsPos, relativeNeighborsDialog, deleteImages, maskInstances, analysisInfos, maskMarkers, newNeighbors, newCoordinates
 
 def createMenuActions(self):
 
@@ -42,6 +42,7 @@ def createMenuActions(self):
     #moreMenu
     self.analysisInfos = QAction('Analysis Infos', self)
     self.newNeighborsCalc = QAction('Re-calculate Neighbors', self)
+    self.newCoordinatesCalc = QAction('New Coordinates', self)
 
 
     #Actions Parameters
@@ -62,6 +63,7 @@ def createMenuActions(self):
     self.relativeDisp.setStatusTip('Plot relative neighbors displacement over all the images and mask jumpers.')
     self.analysisInfos.setStatusTip('Get detailed informations on the current analysis.')
     self.newNeighborsCalc.setStatusTip = ('Update the current markers neighbors list.')
+    self.newCoordinatesCalc.setStatusTip = ('Re-calculate the mapped plot coordinates.')
 
     #Actions Triggers
     self.newAction.triggered.connect(lambda: startOptions.startNewAnalysis(self))
@@ -77,9 +79,9 @@ def createMenuActions(self):
     self.relativeDisp.triggered.connect(lambda: relativeNeighborsDialog.launchRNDialog(self))
     self.analysisInfos.triggered.connect(lambda: analysisInfos.launchDialog(self))
     self.newNeighborsCalc.triggered.connect(lambda: newNeighbors.launchNeighborsDialog(self))
+    self.newCoordinatesCalc.triggered.connect(lambda: newCoordinates.launchCoordinatesDialog(self))
 
     self.manageProfile.triggered.connect(lambda: profile.manageProfile(self))
-
 
 
 def createMenu(self):
@@ -126,6 +128,7 @@ def createMenu(self):
 
     moreMenu.addAction(self.analysisInfos)
     moreMenu.addAction(self.newNeighborsCalc)
+    moreMenu.addAction(self.newCoordinatesCalc)
 
     #disabled actions
     menuDisabled(self)
@@ -142,6 +145,7 @@ def menuDisabled(parent):
     parent.maskInstances.setDisabled(True)
     parent.analysisInfos.setDisabled(True)
     parent.newNeighborsCalc.setDisabled(True)
+    parent.newCoordinatesCalc.setDisabled(True)
 
 def menuEnabled(parent): #menu enabled when analysis is open
 
@@ -153,6 +157,7 @@ def menuEnabled(parent): #menu enabled when analysis is open
     parent.maskInstances.setEnabled(True)
     parent.analysisInfos.setEnabled(True)
     parent.newNeighborsCalc.setEnabled(True)
+    parent.newCoordinatesCalc.setEnabled(True)
 
 def menuCreateGridEnabled(parent): #menu enabled when creating a grid
 

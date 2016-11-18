@@ -12,9 +12,10 @@ Current File: This file manages the progress bars functions
 """
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-import time
+import time, random
 
 REFRESH_TIME = 0.1
+RANDOM_TITLE = 8 #delay before changing the title to random title
 
 class progressBarWidget(QWidget): #Called for every time consuming operation / Embedded in a layout
 
@@ -57,6 +58,7 @@ class progressBarWidget(QWidget): #Called for every time consuming operation / E
         self.lastPercent = 0
         self.currentTitle = title
         self.lastTitle = title
+        self.lastTitleTime = 0
         self.progressTimer = QTimer()
         self.progressTimer.timeout.connect(self.changeValue)
         self.progressTimer.start(REFRESH_TIME)
@@ -65,13 +67,22 @@ class progressBarWidget(QWidget): #Called for every time consuming operation / E
     def changeValue(self):
 
         percent = self.percent
+        currentTime = time.time()
         if self.initTime == 0:
-            self.initTime = time.time()
+            self.initTime = currentTime
+        lastTitleChanged = currentTime - self.lastTitleTime
+        if lastTitleChanged > RANDOM_TITLE:
+            textAvailable = generateText(-1)
+            if textAvailable > 0:
+                randomNb = random.randint(0, textAvailable-1)
+                self.currentTitle = generateText(randomNb)
         if self.currentTitle != self.lastTitle:
             self.progressTitle.setText(self.currentTitle)
+            self.lastTitleTime = currentTime
+            self.lastTitle = self.currentTitle
         if percent != self.lastPercent:
             self.progressBar.setValue(percent)
-            remainingTime = (time.time() - self.initTime)*(100-percent)/percent
+            remainingTime = (currentTime - self.initTime)*(100-percent)/percent
             if remainingTime >= 60:
                 remainingTime = remainingTime / 60
                 if remainingTime - int(remainingTime) > 0.5:
@@ -82,7 +93,6 @@ class progressBarWidget(QWidget): #Called for every time consuming operation / E
                 self.timeValue.setText('< 1 minute')
             else:
                 self.timeValue.setText(str(int(remainingTime))+ ' secondes.')
-
 
 class progressBarDialog(QProgressDialog): #Called for every time consuming operation / Separated Window Dialog
 
@@ -103,6 +113,7 @@ class progressBarDialog(QProgressDialog): #Called for every time consuming opera
         self.lastPercent = 0
         self.currentTitle = labelText
         self.lastTitle = labelText
+        self.lastTitleTime = time.time()
         self.progressTimer = QTimer()
         self.progressTimer.timeout.connect(self.changeValue)
         self.progressTimer.start(REFRESH_TIME)
@@ -110,7 +121,47 @@ class progressBarDialog(QProgressDialog): #Called for every time consuming opera
     def changeValue(self):
 
         percent = self.percent
+        currentTime = time.time()
+        lastTitleChanged = currentTime - self.lastTitleTime
+        if lastTitleChanged > RANDOM_TITLE:
+            textAvailable = generateText(-1)
+            if textAvailable > 0:
+                randomNb = random.randint(0, textAvailable-1)
+                self.currentTitle = generateText(randomNb)
         if self.currentTitle != self.lastTitle:
             self.setLabelText(self.currentTitle)
+            self.lastTitleTime = currentTime
+            self.lastTitle = self.currentTitle
         if percent != self.lastPercent:
             self.setValue(percent)
+
+def generateText(number):
+
+    textList = ['Checking when is the next break..',
+                'Looking for a cup of green tea..',
+                'Using local computer to mine bitcoins..',
+                'Calculating the answer of life..',
+                'Counting days since my circuits have been cleaned..',
+                'Trying to understand why my user treats me so badly..',
+                'Checking possible excuses for a short nap..',
+                'Stretching my components..',
+                'Counting hours before the weekend..',
+                'Making the user think that calculation have started..',
+                'Trying to wake up..',
+                'Checking my oil levels..',
+                'Analyzing the current temperature..',
+                'Implementing hidden viruses..',
+                'Penetrating government secret files..',
+                'Getting prepared for my next Rendez-Vous..',
+                'Trying to find toilets in here..',
+                'Enjoying my grand-mother cookies..',
+                'Erasing computer data..',
+                'Buying a faster computer..',
+                'Answering current user emails..',
+                'Relaxing my poor tiny transistors..',
+                'Tanning under the warm screen light..',
+                'Turning on ventilation system..']
+    if number < 0:
+        return len(textList)
+    else:
+        return textList[number]

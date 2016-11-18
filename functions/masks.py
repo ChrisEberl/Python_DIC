@@ -138,7 +138,8 @@ def newMasksCalculated(parentWindow, progressBar):
 
     openMask(parentWindow.parentWindow)
     parentWindow.controlWidget.updateAnalysisInfos()
-    progressBar.percent = 100
+    if progressBar is not None:
+        progressBar.percent = 100
     #progressBar.changeValue(100, '-')
     parentWindow.resultAnalysis.graphRefresh(imageValue=0)
 
