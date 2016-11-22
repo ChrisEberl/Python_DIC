@@ -15,7 +15,7 @@ from PyQt4.QtGui import *
 import time, random
 
 REFRESH_TIME = 0.1
-RANDOM_TITLE = 8 #delay before changing the title to random title
+RANDOM_TITLE = 10 #delay before changing the title to random title
 
 class progressBarWidget(QWidget): #Called for every time consuming operation / Embedded in a layout
 

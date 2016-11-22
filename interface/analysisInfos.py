@@ -44,9 +44,10 @@ class analysisInfos(QDialog):
 
         filePath =  self.parent.fileDataPath+'/infoAnalysis.csv'
         filePathMarkers =  self.parent.fileDataPath+'/infoMarkers.csv'
-        self.infos = getData.getDataFromFile([filePath], 0, singleColumn=1) #None if not found
+        infos = getData.testReadFile(filePath, lib=1) #None if not found
         # 0 Name, 1 Reference Mode, 2 CorrSize, 3 nbProcesses, 4 total processing time, 5 nbImages, 6 nbMarkers, 7 nbImages * nbMarkers, 8 largeDisp YES/NO, 9 Author
-        self.markersInfos = getData.getDataFromFile([filePathMarkers], 0) #None if not found
+        self.infos = np.char.decode(infos, encoding="ascii")
+        self.markersInfos = getData.testReadFile(filePathMarkers) #None if not found
         if self.infos is None:
             missingFile = QLabel('infoAnalysis.csv file not found.')
             self.mainLayout.addWidget(missingFile)

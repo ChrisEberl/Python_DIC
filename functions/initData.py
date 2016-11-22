@@ -118,14 +118,14 @@ def initPlottedData(parent, progressBar, currentMask, toRecalculate, thread):
     directory = parent.parentWindow.fileDataPath
 
     if toRecalculate is None:
-        progressBar.currentTitle = 'Opening coordinates...'
+        progressBar.currentTitle = 'Checking coordinates...'
         zi, zi_strainX, zi_strainY = openCoordinates(directory, nbInstances, nbActiveImages)
-        if zi is not None:
+        if zi is not None: #Select coordinates as default if they've been found
             parent.zi = zi
             parent.zi_strainX = zi_strainX
             parent.zi_strainY = zi_strainY
             toRecalculate = [False, False, False]
-        else:
+        else: #No coordinates found, they need to be calculated
             toRecalculate = [True, True, True]
 
     if sum(toRecalculate) > 0:
@@ -184,7 +184,8 @@ def openCoordinates(directory, nbInstances, nbImages):
     zi = []
     zi_strainX = []
     zi_strainY = []
-    coordinatesFile = getData.getDataFromFile([directory+'/coordinates.csv'], 0)
+    testTime = time.time()
+    coordinatesFile = getData.testReadFile(directory+'/coordinates.csv')
     if coordinatesFile is not None:
         instanceCoordinates = np.hsplit(coordinatesFile, nbInstances)
         for instance in range(nbInstances):
