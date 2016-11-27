@@ -44,33 +44,28 @@ class RelativeNDialog(QDialog):
         self.displayYMarkers = QCheckBox('Displacement along Y')
         self.displayYMarkers.setCheckable(True)
 
+        self.nbMarkers = QLabel('-')
+        markersLbl = QLabel('Markers')
+        self.cumulativeDisp = QCheckBox('Cumulative displacement')
+        self.cumulativeDisp.setCheckable(True)
+        self.cumulativeDisp.setChecked(True)
 
+        checkBoxOptions.addStretch(1)
         checkBoxOptions.addWidget(self.displayXMarkers)
         checkBoxOptions.addWidget(self.displayYMarkers)
+        checkBoxOptions.addStretch(1)
+        checkBoxOptions.addWidget(self.nbMarkers)
+        checkBoxOptions.addWidget(markersLbl)
+        checkBoxOptions.addWidget(self.cumulativeDisp)
 
         #checkBox clicked
         self.displayXMarkers.stateChanged.connect(self.plotRelativeN)
         self.displayYMarkers.stateChanged.connect(self.plotRelativeN)
+        self.cumulativeDisp.stateChanged.connect(self.plotRelativeN)
 
         self.plotArea = DIC_Global.matplotlibWidget()
         self.plotArea.setFocusPolicy(Qt.ClickFocus)
         self.plotArea.setFocus()
-
-        nodesLayout = QHBoxLayout()
-        nodesLbl = QLabel('Nodes')
-        self.nodesBox = QSpinBox()
-        self.nodesBox.setRange(2, len(self.parent.activeImages))
-        self.nodesBox.valueChanged.connect(self.plotRelativeN)
-        self.nbMarkers = QLabel('-')
-        markersLbl = QLabel('Markers')
-
-        nodesLayout.addStretch(1)
-        nodesLayout.addWidget(nodesLbl)
-        nodesLayout.addWidget(self.nodesBox)
-        nodesLayout.addStretch(1)
-        nodesLayout.addWidget(self.nbMarkers)
-        nodesLayout.addWidget(markersLbl)
-        nodesLayout.addStretch(1)
 
         infosBox = QGroupBox('Settings')
         infosLayout = QHBoxLayout()
@@ -146,8 +141,8 @@ class RelativeNDialog(QDialog):
         deleteLayout = QHBoxLayout()
 
         self.deleteButton = QPushButton('Delete Jumpers')
-        self.deleteButton.setMaximumWidth(100)
-        self.deleteButton.setContentsMargins(0,50,0,10)
+        self.deleteButton.setMaximumWidth(150)
+        self.deleteButton.setContentsMargins(0,30,0,10)
         self.deleteButton.setDisabled(True)
         self.deleteButton.clicked.connect(self.deleteSelection)
 
@@ -160,7 +155,6 @@ class RelativeNDialog(QDialog):
         dialogLayout.addWidget(dialogLabel)
         dialogLayout.addLayout(checkBoxOptions)
         dialogLayout.addWidget(self.plotArea)
-        dialogLayout.addLayout(nodesLayout)
         dialogLayout.addWidget(infosBox)
         dialogLayout.addLayout(deleteLayout)
 
@@ -168,37 +162,24 @@ class RelativeNDialog(QDialog):
 
     def plotRelativeN(self):
 
-        plotAsImage, x_min, x_max, y_min, y_max = self.savePlotPng()
-        self.plotArea.matPlot.cla()
-        #self.plotArea.figure.tight_layout()
+        x_min, x_max , validPlot = self.savePlotPng()
+        y_min, y_max = self.plotArea.matPlot.get_ylim()
 
-        if [y_min, y_max] != [0,0]:
+        if validPlot != 0:
             self.plotArea.mpl_connect('button_press_event', self.on_press)
 
-            self.plotArea.matPlot.set_frame_on(True)
-            self.plotArea.matPlot.axis('on')
-            self.plotArea.matPlot.axes.get_xaxis().set_visible(True)
-            self.plotArea.matPlot.axes.get_yaxis().set_visible(True)
-
-            self.plotArea.matPlot.imshow(plotAsImage, extent=[x_min+1, x_max+1, y_min, y_max])
-
-            self.topLimit = np.linspace(y_max/2, y_max/2, num=self.nodesBox.value()) #coordinates of nodes > 0 along the relative displacement axis
-            self.bottomLimit = np.linspace(y_min/2, y_min/2, num=self.nodesBox.value()) #coordinates of nodes < 0 along the relative displacement axis
-            self.nodeOnImage = np.linspace(1, len(self.imageMatrix[0,:]), num=self.nodesBox.value()) #coordinates of nodes along the image axis
+            self.topLimit = [y_max/2,y_max/2] #coordinates of nodes > 0 along the relative displacement axis
+            self.bottomLimit = [y_min/2, y_min/2] #coordinates of nodes < 0 along the relative displacement axis
+            self.nodeOnImage = [1, len(self.imageMatrix[0,:])] #coordinates of nodes along the image axis
             self.topLimitLine = self.plotArea.matPlot.plot(self.nodeOnImage, self.topLimit, '.-', color="red")
             self.bottomLimitLine = self.plotArea.matPlot.plot(self.nodeOnImage, self.bottomLimit, '.-', color="red")
-            #self.plotArea.imagePlot.set_xlim([1,len(self.imageMatrix[0,:])])
-            self.plotArea.matPlot.set_xlim([x_min+1, x_max+1])
-            self.plotArea.matPlot.set_ylim([y_min, y_max])
 
-            #x0, x1 = self.plotArea.imagePlot.get_xlim()
-            #y0, y1 = self.plotArea.imagePlot.get_ylim()
-            self.plotArea.matPlot.set_aspect((x_max-x_min)/(y_max-y_min))
+            self.plotArea.matPlot.set_xlim([x_min, x_max])
 
             self.minValue_First.setText(str(self.bottomLimit[0]))
             self.maxValue_First.setText(str(self.topLimit[0]))
-            self.minValue_Last.setText(str(self.bottomLimit[self.nodesBox.value()-1]))
-            self.maxValue_Last.setText(str(self.topLimit[self.nodesBox.value()-1]))
+            self.minValue_Last.setText(str(self.bottomLimit[1]))
+            self.maxValue_Last.setText(str(self.topLimit[1]))
 
         self.plotArea.draw_idle()
 
@@ -208,14 +189,13 @@ class RelativeNDialog(QDialog):
         refImg = activeImages[0]
         nbActiveImages = len(np.atleast_1d(activeImages))
         nbMarkers = len(np.atleast_1d(self.activeMarkers[refImg]))
-        imageFile = 0
         [x_min, x_max] = [0,nbActiveImages-1]
-        [y_min, y_max] = [0,0]
+        validPlot = 0
         colorsX = ['green', 'lightgreen', 'limegreen', 'seagreen']
         colorsY = ['blue', 'cornflowerblue', 'royalblue', 'navy']
+        cumulativePlot = self.cumulativeDisp.isChecked()
 
-        self.plotArea.figure.clear()
-        self.plotArea.matPlot=self.plotArea.figure.add_axes((0.05,0.05,0.95,0.95))
+        self.plotArea.matPlot.cla()
         activeInstances = self.parent.activeInstances
         gridInstances = self.parent.grid_instances
         nbInstances = len(np.atleast_1d(activeInstances))
@@ -226,41 +206,35 @@ class RelativeNDialog(QDialog):
             if self.displayXMarkers.isChecked():
                 clr = colorsX[instance % 4]
                 lbl = 'Instance '+str(activeInstances[instance])+' - X-Rel. Disp.'
-                self.plotArea.matPlot.plot(self.imageMatrix[0,:], self.relativeX[instance, 0, :], '-', color=clr, label=lbl)
-                for marker in range(1, nbInstancesMarkers):
-                    self.plotArea.matPlot.plot(self.imageMatrix[marker,:], self.relativeX[instance, marker, :], '-', color=clr)
+                if cumulativePlot:
+                    self.plotArea.matPlot.plot(self.imageMatrix[0,:], self.relativeX[instance, 0, :], '-', color=clr, label=lbl)
+                    for marker in range(1, nbInstancesMarkers):
+                        self.plotArea.matPlot.plot(self.imageMatrix[marker,:], self.relativeX[instance, marker, :], '-', color=clr)
+                else:
+                    self.plotArea.matPlot.plot(self.imageMatrix[0,1:], self.relativeX[instance, 0, 1:]-self.relativeX[instance, 0, :-1], '-', color=clr, label=lbl)
+                    for marker in range(1, nbInstancesMarkers):
+                        self.plotArea.matPlot.plot(self.imageMatrix[marker,1:], self.relativeX[instance, marker, 1:]-self.relativeX[instance, marker, :-1], '-', color=clr)
                 if nbInstancesMarkers > 0:
-                    [y_min, y_max] = [min(y_min, np.nanmin(self.relativeX[instance, markerList, :])), max(y_max, np.nanmax(self.relativeX[instance, markerList, :]))]
+                    validPlot = 1
             if self.displayYMarkers.isChecked():
                 clr = colorsY[instance % 4]
                 lbl = 'Instance '+str(activeInstances[instance])+' - Y-Rel. Disp.'
-                self.plotArea.matPlot.plot(self.imageMatrix[0,:], self.relativeX[instance, 0, :], '-', color=clr, label=lbl)
-                for marker in range(1, nbInstancesMarkers):
-                    self.plotArea.matPlot.plot(self.imageMatrix[marker,:], self.relativeY[instance, marker, :], '-', color=clr)
+                if cumulativePlot:
+                    self.plotArea.matPlot.plot(self.imageMatrix[0,:], self.relativeX[instance, 0, :], '-', color=clr, label=lbl)
+                    for marker in range(1, nbInstancesMarkers):
+                        self.plotArea.matPlot.plot(self.imageMatrix[marker,:], self.relativeY[instance, marker, :], '-', color=clr)
+                else:
+                    self.plotArea.matPlot.plot(self.imageMatrix[0,1:], self.relativeY[instance, 0, 1:]-self.relativeY[instance, 0, :-1], '-', color=clr, label=lbl)
+                    for marker in range(1, nbInstancesMarkers):
+                        self.plotArea.matPlot.plot(self.imageMatrix[marker,1:], self.relativeY[instance, marker, 1:]-self.relativeY[instance, marker, :-1], '-', color=clr)
                 if nbInstancesMarkers > 0:
-                    [y_min, y_max] = [min(y_min, np.nanmin(self.relativeY[instance, markerList, :])), max(y_max, np.nanmax(self.relativeY[instance, markerList, :]))]
+                    validPlot = 1
         if (self.displayXMarkers.isChecked() or self.displayYMarkers.isChecked()): #plot the legend
             self.plotArea.matPlot.legend()
 
-        if [y_min, y_max] != [0,0]:
-
-            self.plotArea.matPlot.set_frame_on(False)
-            self.plotArea.matPlot.axis('off')
-            self.plotArea.matPlot.axes.get_xaxis().set_visible(False)
-            self.plotArea.matPlot.axes.get_yaxis().set_visible(False)
-            self.plotArea.matPlot.set_xlim([x_min, x_max])
-            self.plotArea.matPlot.set_ylim([y_min, y_max])
-
-            self.plotArea.matPlot.set_aspect((x_max-x_min)/(y_max-y_min))
-
-            self.plotArea.figure.savefig('tempRelativ.png', bbox_inches='tight', pad_inches = 0, dpi=self.plotArea.figure.dpi)
-
-            imageFile = cv2.imread('tempRelativ.png')
-            imageFile = cv2.cvtColor(imageFile, cv2.COLOR_BGR2RGB)
-
         self.nbMarkers.setText(str(nbMarkers))
 
-        return imageFile, x_min, x_max, y_min, y_max
+        return x_min, x_max, validPlot
 
     def startCalculation(self, startUp=0):
 
@@ -273,7 +247,6 @@ class RelativeNDialog(QDialog):
 
         else:
             iterations = self.iterationsBox.value()
-            nbNodes = self.nodesBox.value()
 
             relativeX = None
             relativeY = None
@@ -283,7 +256,7 @@ class RelativeNDialog(QDialog):
                 relativeY = self.relativeY
 
             #create Thread for calculations
-            self.neighborsThread = DIC_Global.createThread(self.parent.parentWindow, [self.parent.disp_x, self.parent.disp_y, self.parent.activeImages, self.activeMarkers, self.parent.activeInstances, self.parent.grid_instances, self.parent.neighbors, iterations, nbNodes, self.nodeOnImage, self.topLimit, self.bottomLimit, relativeX, relativeY], newCalculation, signal=1)
+            self.neighborsThread = DIC_Global.createThread(self.parent.parentWindow, [self.parent.disp_x, self.parent.disp_y, self.parent.activeImages, self.activeMarkers, self.parent.activeInstances, self.parent.grid_instances, self.parent.neighbors, iterations, self.nodeOnImage, self.topLimit, self.bottomLimit, relativeX, relativeY], newCalculation, signal=1)
             self.neighborsThread.signal.threadSignal.connect(self.getResults)
             self.deleteButton.setEnabled(False)
 
@@ -347,10 +320,10 @@ class RelativeNDialog(QDialog):
             self.topLimit[0] = np.absolute(float(self.maxValue_First.text()))
 
         if self.minValue_Last.text() not in toAvoid:
-            self.bottomLimit[self.nodesBox.value()-1] = -np.absolute(float(self.minValue_Last.text()))
+            self.bottomLimit[1] = -np.absolute(float(self.minValue_Last.text()))
 
         if self.maxValue_Last.text() not in toAvoid:
-            self.topLimit[self.nodesBox.value()-1] = np.absolute(float(self.maxValue_Last.text()))
+            self.topLimit[1] = np.absolute(float(self.maxValue_Last.text()))
 
         self.bottomLimitLine[0].set_data(self.nodeOnImage, self.bottomLimit)
         self.topLimitLine[0].set_data(self.nodeOnImage, self.topLimit)
@@ -409,8 +382,8 @@ class RelativeNDialog(QDialog):
 
         self.minValue_First.setText(str(self.bottomLimit[0]))
         self.maxValue_First.setText(str(self.topLimit[0]))
-        self.minValue_Last.setText(str(self.bottomLimit[self.nodesBox.value()-1]))
-        self.maxValue_Last.setText(str(self.topLimit[self.nodesBox.value()-1]))
+        self.minValue_Last.setText(str(self.bottomLimit[1]))
+        self.maxValue_Last.setText(str(self.topLimit[1]))
 
         self.plotArea.draw_idle()
 
@@ -442,7 +415,7 @@ def launchRNDialog(self):
     self.relativeN.startCalculation(startUp = 1)
     self.relativeN.exec_()
 
-def newCalculation(disp_x, disp_y, activeImages, activeMarkers, activeInstances, gridInstances, neighbors, iterations, nbNodes, nodeOnImage, topLimitV, bottomLimitV, relativeX, relativeY, thread):
+def newCalculation(disp_x, disp_y, activeImages, activeMarkers, activeInstances, gridInstances, neighbors, iterations, nodeOnImage, topLimitV, bottomLimitV, relativeX, relativeY, thread):
 
     imageMatrix = 0
     refImg = activeImages[0]
@@ -460,29 +433,28 @@ def newCalculation(disp_x, disp_y, activeImages, activeMarkers, activeInstances,
 
         currentMarkers = len(np.atleast_1d(activeMarkers[refImg]))
         toDelete = []
-        for node in range(nbNodes-1):
-            startImage = int(nodeOnImage[node])
-            endImage = int(nodeOnImage[node+1])
-            nbImagesInSlice = endImage - startImage
-            for image in range(startImage, endImage):
-                realImage = activeImages[image]
-                topLimit = topLimitV[node]+(image-startImage)/float(nbImagesInSlice)*(topLimitV[node+1]-topLimitV[node])
-                bottomLimit = bottomLimitV[node]+(image-startImage)/float(nbImagesInSlice)*(bottomLimitV[node+1]-bottomLimitV[node])
-                for instance in range(nbInstances):
-                    instanceMarkers = np.intersect1d(gridInstances[activeInstances[instance]], activeMarkers[realImage], assume_unique=True).astype(np.int)
-                    nbInstanceMarkers = len(np.atleast_1d(instanceMarkers))
-                    if alongX:
-                        for marker in range(nbInstanceMarkers):
-                            currentValue = relativeX[instance, marker, image]
-                            if currentValue > topLimit or currentValue < bottomLimit:
-                                if instanceMarkers[marker] not in toDelete:
-                                    toDelete.append(instanceMarkers[marker])
-                    if alongY:
-                        for marker in range(nbInstanceMarkers):
-                            currentValue = relativeY[instance, marker, image]
-                            if currentValue > topLimit or currentValue < bottomLimit:
-                                if instanceMarkers[marker] not in toDelete:
-                                    toDelete.append(instanceMarkers[marker])
+        startImage = int(nodeOnImage[0])
+        endImage = int(nodeOnImage[1])
+        nbImagesInSlice = endImage - startImage
+        for image in range(startImage, endImage):
+            realImage = activeImages[image]
+            topLimit = topLimitV[0]+(image-startImage)/float(nbImagesInSlice)*(topLimitV[1]-topLimitV[0])
+            bottomLimit = bottomLimitV[0]+(image-startImage)/float(nbImagesInSlice)*(bottomLimitV[1]-bottomLimitV[0])
+            for instance in range(nbInstances):
+                instanceMarkers = np.intersect1d(gridInstances[activeInstances[instance]], activeMarkers[realImage], assume_unique=True).astype(np.int)
+                nbInstanceMarkers = len(np.atleast_1d(instanceMarkers))
+                if alongX:
+                    for marker in range(nbInstanceMarkers):
+                        currentValue = relativeX[instance, marker, image]
+                        if currentValue > topLimit or currentValue < bottomLimit:
+                            if instanceMarkers[marker] not in toDelete:
+                                toDelete.append(instanceMarkers[marker])
+                if alongY:
+                    for marker in range(nbInstanceMarkers):
+                        currentValue = relativeY[instance, marker, image]
+                        if currentValue > topLimit or currentValue < bottomLimit:
+                            if instanceMarkers[marker] not in toDelete:
+                                toDelete.append(instanceMarkers[marker])
 
         if len(np.atleast_1d(toDelete)) > 0:
             for delete in range(len(np.atleast_1d(activeMarkers))):

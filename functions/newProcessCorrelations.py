@@ -71,7 +71,7 @@ def prepareCorrelations(fileNameList, gridX, gridY, corrsize, baseMode, floatSte
     nbMarkersPerProcess = numOfBasePoints/PROCESSES
     if nbMarkersPerProcess < 2:
         nbMarkersPerProcess = 2
-        PROCESSES = numOfBasePoints/2
+        PROCESSES = int(numOfBasePoints/2)+1
     parentWindow.devWindow.addInfo('Number of processes used: '+str(PROCESSES))
     for i in range(0,PROCESSES):
         start = int(i*nbMarkersPerProcess)
