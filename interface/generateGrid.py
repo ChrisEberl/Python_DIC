@@ -804,7 +804,7 @@ class topToolsWidget(QWidget): #contains the different tools to create the grid,
 
     def changeProcessImages(self, maxImg):
 
-        newNb, ok = QInputDialog.getInt(self, 'Change last image number', 'Process until image..', value=self.nbImagesToProcess, minValue=2, maxValue=maxImg)
+        newNb, ok = QInputDialog.getInt(self, 'Change last image number', 'Process until image..', value=self.nbImagesToProcess, min=2, max=maxImg)
         if ok:
             self.nbImagesToProcess = newNb
             self.totalImagesValue.setText(str(newNb))

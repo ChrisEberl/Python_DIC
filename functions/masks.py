@@ -21,17 +21,18 @@ from interface import progressWidget, dockWidget
 def generateMask(mask, path, fileName=None, confirmDialog=True):
 
     if confirmDialog is True:
-        confirmDialog = confirmMask()
-        result = confirmDialog.exec_()
+        confirmCalc = confirmMask()
+        result = confirmCalc.exec_()
     else:
         result = 1
 
     if result == 1:
         #Save mask file into log folder
         if confirmDialog is True:
-            recalculateCoordinates = [confirmDialog.corrBox.isChecked(), confirmDialog.xStrainBox.isChecked(), confirmDialog.yStrainBox.isChecked()]
+            recalculateCoordinates = [confirmCalc.corrBox.isChecked(), confirmCalc.xStrainBox.isChecked(), confirmCalc.yStrainBox.isChecked()]
         else:
             recalculateCoordinates = [True, True, True]
+        print(recalculateCoordinates)
         currentTime = time.localtime()
         if fileName is None:
             fileName=str(currentTime[0])+'_'+str(currentTime[1])+'_'+str(currentTime[2])+'_'+str(currentTime[3])+str(currentTime[4])+str(currentTime[5])+'.dat'

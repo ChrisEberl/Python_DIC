@@ -77,6 +77,7 @@ class nameAnalysis(QDialog):
         self.setWindowTitle('Analysis Creation')
         self.setMaximumWidth(500)
         self.setMaximumHeight(600)
+        self.filePath = filePath
 
         infoLbl = QLabel('Please verify the automatic image selection.')
         infoLbl.setAlignment(Qt.AlignCenter)
@@ -96,15 +97,29 @@ class nameAnalysis(QDialog):
             self.imageModel.appendRow(imageItem)
         self.imageList.setModel(self.imageModel)
         self.imageList.setCurrentIndex(self.imageModel.indexFromItem(self.imageModel.item(0)))
-        self.imageList.clicked.connect(lambda: self.displayImage(filePath, fileNameList))
+        self.imageList.clicked.connect(lambda: self.displayImage(fileNameList))
         imageLayout.addWidget(self.plotArea)
         imageLayout.addWidget(self.imageList)
 
+        totalImageNb = len(np.atleast_1d(fileNameList))
         imageNumberLayout = QHBoxLayout()
+        imageNumberLayout.setSpacing(5)
+        self.fromImage = QSpinBox()
+        self.fromImage.setRange(0,totalImageNb)
+        toImageLbl = QLabel('to')
+        self.toImage = QSpinBox()
+        self.toImage.setRange(0,totalImageNb)
+        invertBtn = QPushButton('Invert')
+        invertBtn.clicked.connect(self.invertSelection)
         imageLbl = QLabel('Selection:')
         self.imageSelected = QLabel('-')
-        totalImage = QLabel('/ '+str(len(np.atleast_1d(fileNameList))))
+        totalImage = QLabel('/ '+str(totalImageNb))
         imageNumberLayout.addStretch(1)
+        imageNumberLayout.addWidget(self.fromImage)
+        imageNumberLayout.addWidget(toImageLbl)
+        imageNumberLayout.addWidget(self.toImage)
+        imageNumberLayout.addWidget(invertBtn)
+        imageNumberLayout.addStretch(2)
         imageNumberLayout.addWidget(imageLbl)
         imageNumberLayout.addWidget(self.imageSelected)
         imageNumberLayout.addWidget(totalImage)
@@ -143,8 +158,8 @@ class nameAnalysis(QDialog):
         buttonLayout.addWidget(self.createButton)
         buttonLayout.addStretch(1)
 
-        self.analysisInput.textChanged.connect(lambda: self.textChanged(filePath, self.analysisInput.text()))
-        self.createButton.clicked.connect(lambda: self.createAnalysis(parent, filePath, self.analysisInput.text()))
+        self.analysisInput.textChanged.connect(lambda: self.textChanged(self.analysisInput.text()))
+        self.createButton.clicked.connect(lambda: self.createAnalysis(parent, self.analysisInput.text()))
         cancelButton.clicked.connect(self.reject)
 
         dialogLayout.addWidget(infoLbl)
@@ -154,19 +169,23 @@ class nameAnalysis(QDialog):
         dialogLayout.addLayout(buttonLayout)
 
         self.setLayout(dialogLayout)
-        self.textChanged(filePath, '')
-        self.displayImage(filePath, fileNameList)
+        self.textChanged('')
+        self.displayImage(fileNameList)
 
 
-    def displayImage(self, filePath, fileNameList):
+    def displayImage(self, fileNameList):
 
         self.plotArea.matPlot.cla()
         imageName = self.imageModel.itemFromIndex(self.imageList.currentIndex()).text()
-        readImage = cv2.imread(filePath+'/'+imageName,0)
+        readImage = cv2.imread(self.filePath+'/'+imageName,0)
         self.plotArea.matPlot.imshow(readImage, cmap='gray')
         self.plotArea.matPlot.axes.xaxis.set_ticklabels([])
         self.plotArea.matPlot.axes.yaxis.set_ticklabels([])
         self.plotArea.draw_idle()
+        self.updateSelection()
+
+    def updateSelection(self):
+
         nbChecked = 0
         for image in range(self.imageModel.rowCount()):
             if self.imageModel.item(image).checkState() == Qt.Checked:
@@ -174,15 +193,26 @@ class nameAnalysis(QDialog):
         self.imageSelected.setText(str(nbChecked))
         if nbChecked > 1:
             self.imageSelected.setText(str(nbChecked))
-            self.textChanged(filePath, self.analysisInput.text())
+            self.textChanged(self.analysisInput.text())
         else:
             self.imageSelected.setText('<font color=red>'+str(nbChecked)+'</font>')
             self.createButton.setEnabled(False)
 
-    def textChanged(self, filePath, name):
+    def invertSelection(self):
+
+        imageMin = min(self.fromImage.value(), self.toImage.value())
+        imageMax = max(self.fromImage.value(), self.toImage.value())
+        for image in range(imageMin, imageMax):
+            if self.imageModel.item(image).checkState() == Qt.Checked:
+                self.imageModel.item(image).setCheckState(Qt.Unchecked)
+            else:
+                self.imageModel.item(image).setCheckState(Qt.Checked)
+        self.updateSelection()
+
+    def textChanged(self, name):
 
         if name != '':
-            checkName = filePath+'/'+name
+            checkName = self.filePath+'/'+name
             if os.path.exists(checkName):
                 self.analysisLbl.setText('<font size=5><font color=red>Already Exist.</font></font>')
                 self.createButton.setEnabled(False)
@@ -194,9 +224,9 @@ class nameAnalysis(QDialog):
             self.analysisLbl.setText('<font size=5>Analysis Name:</font>')
             self.createButton.setEnabled(False)
 
-    def createAnalysis(self, parent, filePath, name):
+    def createAnalysis(self, parent, name):
 
-        directory = filePath+'/'+name
+        directory = self.filePath+'/'+name
         #os.makedirs(directory)
         fileNameList = []
         for image in range(self.imageModel.rowCount()):
@@ -204,6 +234,6 @@ class nameAnalysis(QDialog):
                 fileNameList.append(self.imageModel.item(image).text())
         #np.savetxt(directory+'/filenamelist.dat', fileNameList, fmt="%s")
         parent.fileNameList = fileNameList
-        parent.filePath = filePath
+        parent.filePath = self.filePath
         parent.fileDataPath = directory
         self.accept()
