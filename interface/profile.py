@@ -93,6 +93,7 @@ class manageAllProfiles(QDialog):
         self.setWindowTitle('Profile Management')
         #self.setMinimumSize(400,500)
 
+        self.parent = parent
         self.currentProfile = parent.currentProfile
         self.profileData = parent.profileData
         self.defaultProfile = parent.defaultProfile
@@ -158,17 +159,12 @@ class manageAllProfiles(QDialog):
         profileInfoLayout = QVBoxLayout()
 
         profileLayout = QHBoxLayout()
-        profileLayout.setAlignment(Qt.AlignCenter)
-        profileLbl = QLabel('Name:')
-        self.profileName = QLineEdit()
-        self.profileName.setInputMask('NNNNNNNNNN')
-        self.profileName.setMaximumWidth(120)
-        self.profileDelete = QPushButton('Delete')
-        self.profileDelete.setMaximumWidth(60)
+        self.profileDelete = QPushButton('Delete this profile.')
+        self.profileDelete.setMaximumWidth(150)
         self.profileDelete.clicked.connect(self.deleteProfile)
-        profileLayout.addWidget(profileLbl)
-        profileLayout.addWidget(self.profileName)
+        profileLayout.addStretch(1)
         profileLayout.addWidget(self.profileDelete)
+        profileLayout.addStretch(1)
 
         processesLayout = QHBoxLayout()
         processesLayout.setAlignment(Qt.AlignCenter)
@@ -180,13 +176,13 @@ class manageAllProfiles(QDialog):
         processesLayout.addWidget(self.processesValue)
         processesLayout.addWidget(processesLbl2)
 
-        profileInfoLayout.addLayout(profileLayout)
         profileInfoLayout.addLayout(processesLayout)
+        profileInfoLayout.addLayout(profileLayout)
         profileBox.setLayout(profileInfoLayout)
 
         saveLayout = QHBoxLayout()
         saveButton = QPushButton('Save Changes')
-        saveButton.setMaximumWidth(100)
+        saveButton.setMaximumWidth(130)
         saveButton.clicked.connect(self.saveProfile)
         saveLayout.addStretch(1)
         saveLayout.addWidget(saveButton)
@@ -231,8 +227,6 @@ class manageAllProfiles(QDialog):
         self.corrsizeValue.setValue(corrSizeValue)
 
         #profile Settings
-        profileName = str(self.profileData['User'][self.currentIndex])
-        self.profileName.setText(profileName)
         if self.currentIndex == self.currentProfile:
             self.profileDelete.setDisabled(True)
         else:
@@ -242,16 +236,31 @@ class manageAllProfiles(QDialog):
 
     def newProfile(self):
 
-        newProfileIndex = len(self.profileData['User'])
-        for key in self.profileData:
-            profileData = self.profileData[key].tolist()
-            for element in self.defaultProfile:
-                if element[0] == key:
-                    profileData.append(element[1])
-                    break
-            self.profileData[key] = np.array(profileData)
-        self.profileList.addItem(self.profileData['User'][newProfileIndex])
-        self.profileList.setCurrentIndex(newProfileIndex)
+        text, ok = QInputDialog.getText(self, 'New Profile', 'Enter desired profile name:')
+        #defining validator
+        validatorRx = QRegExp("\\w+")
+        validator = QRegExpValidator(validatorRx, self)
+        #check user answer
+        if ok and text != '':
+            checkUsername = validator.validate(text, 0)
+            if checkUsername[0] > 1:
+                newProfileIndex = len(self.profileData['User'])
+                for key in self.profileData:
+                    profileData = self.profileData[key].tolist()
+                    for element in self.defaultProfile:
+                        if element[0] == key:
+                            if key == 'User':
+                                profileData.append(text)
+                            else:
+                                profileData.append(element[1])
+                            break
+                    self.profileData[key] = np.array(profileData)
+                self.profileList.addItem(self.profileData['User'][newProfileIndex])
+                self.profileList.setCurrentIndex(newProfileIndex)
+            else:
+                msgBox = QMessageBox()
+                msgBox.setText("Please use only alpha-numeric characters.")
+                msgBox.exec_()
 
     def deleteProfile(self):
 
@@ -289,23 +298,14 @@ class manageAllProfiles(QDialog):
             return None
 
         corrSize = self.corrsizeValue.value()
-        profileName = self.profileName.text()
-        if profileName == '':
-            self.profileError('Please enter a profile name.', finalSaving=finalSaving)
-            return None
-        for user in self.profileData['User']:
-            if user == profileName and user != self.profileData['User'][self.currentIndex]:
-                self.profileError('This profile already exist.', finalSaving=finalSaving)
-                return None
         nbProcesses = self.processesValue.value()
 
         self.profileData['FullScreen'][self.currentIndex] = fullScreen
         self.profileData['Width'][self.currentIndex] = width
         self.profileData['Height'][self.currentIndex] = height
         self.profileData['CorrSize'][self.currentIndex] = corrSize
-        self.profileData['User'][self.currentIndex] = profileName
         self.profileData['nbProcesses'][self.currentIndex] = nbProcesses
-        self.profileList.setItemText(self.currentIndex, profileName)
+        self.profileList.setItemText(self.currentIndex, self.profileData['User'][self.currentIndex])
 
         return True
 
@@ -320,6 +320,7 @@ class manageAllProfiles(QDialog):
                 values.append(value)
             newParameters = np.column_stack([np.array(keys), np.array(values)])
             np.savetxt(self.profilePath, newParameters, delimiter='|', fmt="%s")
+            setDefaultProfile(self.parent, self.profileData['User'][self.currentIndex]) #set default user to currently modified
             infoBox = QMessageBox()
             infoBox.setWindowTitle("Info")
             infoBox.setText("New settings will be applied on next start-up.")
