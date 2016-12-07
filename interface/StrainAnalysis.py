@@ -12,23 +12,17 @@ More details regarding the project on the GitHub Wiki : https://github.com/Chris
 Current File: This file runs the Main Analysis widget, parent of the whole visualization tool
 """
 
-import menubar
-from PySide.QtCore import *
-from PySide.QtGui import *
-import getData
-import initData
-import progressWidget
-import masks
-import controlWidget
-
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
-import matplotlib.mlab as ml
-from mpl_toolkits.mplot3d import Axes3D
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-from matplotlib import cm
-
+from PyQt4.QtCore import *
+from PyQt4.QtGui import *
+from interface import menubar, initApp, progressWidget, controlWidget
+from functions import DIC_Global, getData, initData, masks
+#from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+#from matplotlib.figure import Figure
+#import matplotlib.pyplot as plt
+#import matplotlib.mlab as ml
+#from mpl_toolkits.mplot3d import Axes3D
+#from mpl_toolkits.axes_grid1 import make_axes_locatable
+#from matplotlib import cm
 import numpy as np
 
 class MainAnalysis(QWidget):
@@ -46,20 +40,18 @@ class MainAnalysis(QWidget):
         self.mainLayout.setAlignment(Qt.AlignHCenter)
 
         #Creation of the temporary progressBar
-        self.openingBar = progressWidget.progressBarWidget(maximumWidth=250, minimumHeight=30)
+        self.openingBar = progressWidget.progressBarWidget(maximumWidth=300)
         self.mainLayout.addWidget(self.openingBar)
         self.setLayout(self.mainLayout)
 
         self.parentWindow.devWindow.addInfo('Starting the thread.. Analysis Loading..')
 
         #initiate and start the opening thread
-        self.openingThread = self.parentWindow.createThread([self.parentWindow, self.openingBar], getData.openData, signal=1)
+        self.openingThread = DIC_Global.createThread(self.parentWindow, [self.parentWindow, self.openingBar], getData.openData, signal=1)
         self.openingThread.signal.threadSignal.connect(self.dataLoaded)
         self.openingThread.start()
 
     def dataLoaded(self, variables):
-
-
         #remove the progressBar
         self.mainLayout.removeWidget(self.openingBar)
         self.openingBar.deleteLater()
@@ -90,12 +82,11 @@ class MainAnalysis(QWidget):
             self.neighbors = None
             self.createLayout()
         else:
-            self.parentWindow.homeWidget('Missing Files. Please check the documentation.')
-
-
+            firstWidget = initApp.defaultWidget(self.parentWindow)
+            self.parentWindow.setCentralWidget(firstWidget)
+            firstWidget.printMessage('Missing Files. Please check the documentation.', imp=1)
 
     def createLayout(self):
-
 
         #self.layout = QVBoxLayout() #create main vertical layout
         self.mainLayout.setContentsMargins(0,0,0,0)
@@ -106,6 +97,7 @@ class MainAnalysis(QWidget):
 
         self.parentWindow.devWindow.addInfo('Menus enabled. Toolbar created. Setting-up the layout.')
 
+        self.resultAnalysis = ResultAnalysis(self)
 
         #control widget
         self.controlWidget = controlWidget.controlWidget(self)
@@ -114,21 +106,19 @@ class MainAnalysis(QWidget):
         self.mainLayout.addStretch(1)
 
 
+        #activate event for slider
+        #self.controlWidget.imageSelector.valueChanged.connect(lambda: self.resultAnalysis.graphRefresh())
+        #self.controlWidget.sliderSelector.valueChanged.connect(lambda: self.resultAnalysis.graphRefresh)
+
         self.parentWindow.devWindow.addInfo('Layout ready. Starting the visualisation.')
+
         self.run()
 
 
     def run(self):
 
-
-        self.resultAnalysis = ResultAnalysis(self)
-
         self.currentMask = masks.openMask(self.parentWindow)
         initData.createPlots(self)
-        
-        #activate event for slider
-        self.controlWidget.imageSelector.valueChanged.connect(self.resultAnalysis.graphRefresh)
-        self.controlWidget.sliderSelector.valueChanged.connect(self.resultAnalysis.graphRefresh)
 
         progressBar = progressWidget.progressBarDialog('Opening processes..')
 
@@ -136,32 +126,11 @@ class MainAnalysis(QWidget):
 
         #self.controlWidget.updateAnalysisInfos()
 
-
-    def changeParameters(self):
-
-        self.new_coeff, self.ok = QInputDialog.getInt(self, 'Standard Dev.', 'Multiplication Coeff. :', value=self.m_coeff, minValue=1, step=5)
-        if self.ok:
-            self.m_coeff = self.new_coeff
-            self.parentWindow.devWindow.addInfo('New Std. Dev. Multiplication Coeff. : '+str(self.m_coeff))
-
-            self.parentWindow.statusBar().showMessage('Multiplication coefficient for standard deviation changed. New value : '+str(self.m_coeff))
-            self.resultAnalysis.graphRefresh(self.slider.value())
-
-
 class ResultAnalysis(QWidget):
 
     def __init__(self, parentWidget):
 
         self.parentWidget = parentWidget
-
-
-#    @Slot()
-#    def sliderChange(self, value): #called when the value of the slider change
-#        tic = time.time()
-#        self.graphRefresh(value)
-#        toc = time.time()
-#        self.parentWidget.parentWindow.statusBar().showMessage('Refreshing Time : '+str(toc-tic)+'s') #change infos label
-
 
     def graphRefresh(self, imageValue=0): #function to refresh the different 3d-plots
 

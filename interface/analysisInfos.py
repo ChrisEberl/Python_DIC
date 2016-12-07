@@ -11,18 +11,10 @@ More details regarding the project on the GitHub Wiki : https://github.com/Chris
 Current File: This file manages the analysis info dialog
 """
 
-from PySide.QtCore import *
-from PySide.QtGui import *
-import numpy as np
-import plot3D
-import plot2D
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
-from matplotlib.figure import Figure
-import time
-import getData
-import masks
-
+from PyQt4.QtCore import *
+from PyQt4.QtGui import *
+import numpy as np, matplotlib as mpl, time
+from functions import plot2D, plot3D, getData, masks, DIC_Global
 
 def launchDialog(parent):
 
@@ -30,39 +22,44 @@ def launchDialog(parent):
     analysisDialog.exec_()
 
 class analysisInfos(QDialog):
-    
+
     def __init__(self, parent):
-        
+
         super(analysisInfos, self).__init__()
-        
-        self.parent = parent        
-        
+
+        self.parent = parent
+
         self.setWindowTitle('Analysis Info')
         self.setMinimumWidth(500)
-        
+
         self.mainLayout = QVBoxLayout()
         #self.mainLayout.setAlignment(Qt.AlignCenter)
         #self.mainLayout.setSpacing(30)
-        
+
         self.setLayout(self.mainLayout)
-        
-        self.openInfos()        
-        
+
+        self.openInfos()
+
     def openInfos(self):
-        
-        filePath =  self.parent.fileDataPath+'\infoAnalysis.dat'
-        filePathMarkers =  self.parent.fileDataPath+'\infoMarkers.dat'
-        self.infos = getData.getDataFromFile([filePath], 0, singleColumn=1) #None if not found
+
+        filePath =  self.parent.fileDataPath+'/infoAnalysis.csv'
+        filePathMarkers =  self.parent.fileDataPath+'/infoMarkers.csv'
+        strainX = self.parent.fileDataPath+'/strainx.csv'
+        strainY = self.parent.fileDataPath+'/strainy.csv'
+        infos = getData.testReadFile(filePath, lib=1) #None if not found
         # 0 Name, 1 Reference Mode, 2 CorrSize, 3 nbProcesses, 4 total processing time, 5 nbImages, 6 nbMarkers, 7 nbImages * nbMarkers, 8 largeDisp YES/NO, 9 Author
-        self.markersInfos = getData.getDataFromFile([filePathMarkers], 0) #None if not found
+        self.infos = np.char.decode(infos, encoding="ascii")
+        self.markersInfos = getData.testReadFile(filePathMarkers) #None if not found
+        self.fileStrainX = getData.testReadFile(strainX) #None if not found
+        self.fileStrainY = getData.testReadFile(strainY) #None if not found
         if self.infos is None:
-            missingFile = QLabel('infoAnalysis.dat file not found.')
+            missingFile = QLabel('infoAnalysis.csv file not found.')
             self.mainLayout.addWidget(missingFile)
         else:
             self.displayInfos()
-            
+
     def displayInfos(self):
-        
+
         infoFrame = QFrame()
         infoFrame.setFrameShape(QFrame.StyledPanel)
         nameLayout = QHBoxLayout()
@@ -74,7 +71,7 @@ class analysisInfos(QDialog):
         versionLblValue = QLabel('<b>'+str(versionName)+'</b>')
         authorLbl = QLabel('Author:')
         authorLblValue = QLabel('<b>'+str(self.infos[9])+'</b>')
-        
+
         simpleSeparator = QFrame()
         simpleSeparator.setFrameShape(QFrame.VLine)
         simpleSeparator2 = QFrame()
@@ -87,9 +84,9 @@ class analysisInfos(QDialog):
         nameLayout.addWidget(simpleSeparator2)
         nameLayout.addWidget(authorLbl)
         nameLayout.addWidget(authorLblValue)
-        
+
         infoFrame.setLayout(nameLayout)
-        
+
         globalInfosLayout = QHBoxLayout()
         globalInfosLayout.setContentsMargins(50,0,20,20)
         #globalInfosLayout.setAlignment(Qt.AlignCenter)
@@ -105,7 +102,7 @@ class analysisInfos(QDialog):
         globalInfosLayout.addWidget(imagesLblValue)
         globalInfosLayout.addWidget(markersLbl)
         globalInfosLayout.addWidget(markersLblValue)
-        
+
         currentInfosLayout = QHBoxLayout()
         currentInfosLayout.setContentsMargins(50,20,20,0)
         #currentInfosLayout.setAlignment(Qt.AlignCenter)
@@ -123,11 +120,11 @@ class analysisInfos(QDialog):
         currentInfosLayout.addWidget(currentImagesLblValue)
         currentInfosLayout.addWidget(currentMarkersLbl)
         currentInfosLayout.addWidget(currentMarkersLblValue)
-        
+
         otherInfosLbl = QLabel('- ADDITIONAL INFORMATIONS -')
         otherInfosLbl.setContentsMargins(0,0,0,10)
         otherInfosLbl.setAlignment(Qt.AlignCenter)
-        
+
         otherInfosLayout = QHBoxLayout()
         otherInfosLayout.setContentsMargins(0,0,0,10)
         #otherInfosLayout.setAlignment(Qt.AlignCenter)
@@ -158,7 +155,7 @@ class analysisInfos(QDialog):
         otherInfosLayout.addWidget(instanceLblValue)
         otherInfosLayout.addWidget(nbVersionsLbl)
         otherInfosLayout.addWidget(nbVersionsLblValue)
-        
+
         extraInfosLayout = QHBoxLayout()
         extraInfosLayout.setAlignment(Qt.AlignLeft)
         processingLbl = QLabel('Correlation processing time:')
@@ -191,15 +188,15 @@ class analysisInfos(QDialog):
         extraInfosLayout.addWidget(shiftCorrectionLblValue)
         extraInfosLayout.addWidget(filterLbl)
         extraInfosLayout.addWidget(filterLblValue)
-        
-        
+
+
         plotListLayout = QHBoxLayout()
         plotListLayout.setAlignment(Qt.AlignLeft)
         plotListLayout.setContentsMargins(20,25,0,0)
         plotListLbl = QLabel('Display:')
         self.plotListBox = QComboBox()
         self.plotListBox.setMinimumWidth(200)
-        availablePlots = ['Correlation Errors', 'Plot2', 'Plot3']
+        availablePlots = ['Correlation Errors', 'Poisson Ratio']
         for plot in availablePlots:
             self.plotListBox.addItem(plot)
         self.plotListOptions = QComboBox()
@@ -210,10 +207,10 @@ class analysisInfos(QDialog):
         plotListLayout.addWidget(self.plotListBox)
         plotListLayout.addWidget(self.plotListOptions)
         plotListLayout.addWidget(self.plotListCheckBox)
-        
+
         matplotlibLayout = QHBoxLayout()
         matplotlibLayout.setContentsMargins(0,0,0,0)
-        self.matplotlibPlot = matplotlibWidget()
+        self.matplotlibPlot = DIC_Global.matplotlibWidget()
         self.matplotlibPlot.setContentsMargins(0,0,0,0)
         matplotlibLayout.addStretch(1)
         matplotlibLayout.addWidget(self.matplotlibPlot)
@@ -221,7 +218,7 @@ class analysisInfos(QDialog):
         self.plotListBox.currentIndexChanged.connect(self.plotOptions)
         self.plotListOptions.currentIndexChanged.connect(self.plotInfos)
         self.plotListCheckBox.stateChanged.connect(lambda: self.plotInfos(self.plotListOptions.currentIndex()))
-        
+
         self.mainLayout.addWidget(infoFrame)
         self.mainLayout.addLayout(currentInfosLayout)
         self.mainLayout.addLayout(globalInfosLayout)
@@ -231,25 +228,29 @@ class analysisInfos(QDialog):
         self.mainLayout.addLayout(plotListLayout)
         self.mainLayout.addLayout(matplotlibLayout)
         self.plotOptions(0)
-        
+
     def plotOptions(self, item):
-        
+
         self.plotListOptions.clear()
         plotOptions = []
         if item == 0:
             plotOptions = ['All', 'Edge Area', 'Marker Out', 'NaN', 'No Std. Dev.', 'Outside SubPx.', 'Div. by 0', 'Low Corr.', 'Bad Peak']
+        if item == 1:
+            plotOptions = ['Compression/Extension along X', 'Compression/Extension along Y']
         for option in plotOptions:
             self.plotListOptions.addItem(option)
         self.plotInfos(0)
-        
+
     def plotInfos(self, option):
-        
-        self.matplotlibPlot.plot.cla()
+
+        self.matplotlibPlot.matPlot.cla()
         plotType = self.plotListBox.currentIndex()
         onlyActives = self.plotListCheckBox.isChecked()
         activeImages = self.parent.analysisWidget.activeImages
         totalImages = self.parent.analysisWidget.nb_image
+
         if plotType == 0:
+            self.plotListCheckBox.setEnabled(True)
             errorList = []
             legend = []
             if onlyActives:
@@ -257,7 +258,6 @@ class analysisInfos(QDialog):
             else:
                 imageRange = totalImages
             if option == 0:
-                
                 errors = np.unique(self.markersInfos)
                 for error in errors:
                     if error == 0:
@@ -273,7 +273,7 @@ class analysisInfos(QDialog):
                             occurence = list(self.markersInfos[:,image]).count(error)
                             for nb in range(occurence):
                                 currentList.append(image)
-                    if currentList <> []:
+                    if currentList != []:
                         legend.append(self.plotListOptions.itemText(error))
                     errorList.append(currentList)
             else:
@@ -288,35 +288,43 @@ class analysisInfos(QDialog):
                         occurence = list(self.markersInfos[:,image]).count(option)
                         for nb in range(occurence):
                             currentList.append(image)
-                if currentList <> []:
+                if currentList != []:
                     legend.append(self.plotListOptions.itemText(option))
                     errorList.append(currentList)
             #errorList = np.array(errorList)
             nbList = len(np.atleast_1d(errorList))
             if nbList:
-                self.matplotlibPlot.plot.hist(errorList, totalImages+1, range=(0, totalImages+1), align='right', histtype='bar', stacked=True, label=legend)
+                self.matplotlibPlot.matPlot.hist(errorList, totalImages+1, range=(0, totalImages+1), align='right', histtype='bar', stacked=True, label=legend)
                 if onlyActives is False:
-                    self.matplotlibPlot.plot.plot(activeImages+np.ones_like(activeImages), np.zeros_like(activeImages), 'o', c='red')
-                self.matplotlibPlot.plot.set_xlim([0.5,totalImages+0.5])
-                self.matplotlibPlot.plot.set_ylim(bottom=0)
+                    self.matplotlibPlot.matPlot.plot(activeImages+np.ones_like(activeImages), np.zeros_like(activeImages), 'o', c='red')
+                self.matplotlibPlot.matPlot.set_xlim([0.5,totalImages+0.5])
+                self.matplotlibPlot.matPlot.set_ylim(bottom=0)
             else:
-                ax = self.matplotlibPlot.plot
+                ax = self.matplotlibPlot.matPlot
                 ax.text(.5, .5, 'No error.', ha='center', va='center', transform = ax.transAxes, color='red')
-            
-        
-        self.matplotlibPlot.draw_idle()
-        
-        
-        
-class matplotlibWidget(FigureCanvas):
-    
-    def __init__(self):
-        
-        self.figure = Figure()
-        super(matplotlibWidget,self).__init__(self.figure)
-        
-        self.figure.set_facecolor('none')
-        self.canvas = FigureCanvas(self.figure)
 
-        self.plot = self.figure.add_subplot(111)
-        self.figure.tight_layout()
+        if plotType == 1:
+            self.plotListCheckBox.setEnabled(False)
+            nbImages = self.fileStrainX.shape[0]
+            nbInstances = self.fileStrainX.shape[1]
+            imageList = np.linspace(1, totalImages+1, totalImages, endpoint=False).astype(np.int)
+            poissonRatio = np.zeros((nbInstances, nbImages))
+            colors = ['blue', 'cornflowerblue', 'royalblue', 'navy']
+            if option > 0:
+                numerator = self.fileStrainX
+                denominator = self.fileStrainY
+            else:
+                numerator = self.fileStrainY
+                denominator = self.fileStrainX
+            for instance in range(nbInstances):
+                for image in range(len(activeImages)):
+                    if denominator[image, instance] != 0:
+                        poissonRatio[instance, image] = numerator[image, instance]/denominator[image, instance]
+                    else:
+                        poissonRatio[instance, image] = np.nan
+                clr = colors[instance % 4]
+                lbl = 'Instance '+str(instance)
+                self.matplotlibPlot.matPlot.plot(activeImages, poissonRatio[instance, :], '-', color=clr, label=lbl)
+                if nbInstances > 1:
+                    self.matplotlibPlot.matPlot.legend()
+        self.matplotlibPlot.draw_idle()

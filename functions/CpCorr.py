@@ -13,9 +13,7 @@ More details regarding the project on the GitHub Wiki : https://github.com/Chris
 Current File: This file has been translated, adapted and further developed from 'Digital Image Correlation and Tracking' for Matlab exchanged by Melanie Senn on Mathworks
 """
 
-import numpy as np
-from scipy import interpolate
-import cv2
+import numpy as np, cv2, scipy.interpolate
 
 def cpcorr(InputPoints,BasePoints,Input,Base, CORRSIZE):
 
@@ -24,9 +22,9 @@ def cpcorr(InputPoints,BasePoints,Input,Base, CORRSIZE):
 
     # get all rectangle coordinates
     rects_moving = np.array(calc_rects(xymoving_in,CORRSIZE,moving)).astype(np.int)
-
     rects_fixed = np.array(calc_rects(xyfixed_in,2*CORRSIZE,fixed)).astype(np.int)
     ncp = len(np.atleast_1d(xymoving_in))
+
     xymoving = xymoving_in    # initialize adjusted control points matrix
     CorrCoef=np.zeros((ncp,1))
     StdX=np.zeros((ncp,1))
@@ -162,7 +160,7 @@ def calc_rects(xy,halfwidth,img):
     #width[idx] = 0
     #height[idx] = 0
 
-    rect = [left, upper, width, height]
+    rect = [left.astype(np.int), upper.astype(np.int), width.astype(np.int), height.astype(np.int)]
     return rect
 
 def adjust_lo_edge(coordinates,edge,breadth):

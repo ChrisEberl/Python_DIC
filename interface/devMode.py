@@ -11,18 +11,17 @@ More details regarding the project on the GitHub Wiki : https://github.com/Chris
 Current File: This file manages the developer mode - NOT TESTED COMPLETELY
 """
 
-from PySide.QtGui import *
-from PySide.QtCore import *
-
+from PyQt4.QtGui import *
+from PyQt4.QtCore import *
 
 class DevMode(QDockWidget): #dockWidget used in DevMode to display more informations to the developer
-    
-    def __init__(self, Mode):
-        
+
+    def __init__(self, parent, Mode):
+
         super(DevMode, self).__init__()
-        
+
         self.devMode = Mode
-        
+
         if self.devMode == 1:
             self.devWidget = QWidget()
             self.devWidget.setMaximumHeight(100)
@@ -31,7 +30,7 @@ class DevMode(QDockWidget): #dockWidget used in DevMode to display more informat
             self.textInfo = QTextEdit()
             self.textInfo.setReadOnly(True)
             self.devInfo = self.textInfo
-            self.devInfo.verticalScrollBar().rangeChanged.connect(self.ResizeScroll) #auto-scroll down 
+            self.devInfo.verticalScrollBar().rangeChanged.connect(self.ResizeScroll) #auto-scroll down
             self.devLayout.addWidget(self.label)
             self.devLayout.addWidget(self.textInfo)
             self.devWidget.setLayout(self.devLayout)
@@ -40,12 +39,14 @@ class DevMode(QDockWidget): #dockWidget used in DevMode to display more informat
             self.addInfo('Application started.')
         else:
             self.setHidden(True)
-            
+
+        parent.addDockWidget(Qt.BottomDockWidgetArea, self)
+
     def ResizeScroll(self, min, maxi): #auto-scroll down function for DevMode
         self.devInfo.verticalScrollBar().setValue(maxi)
-        
+
     def addInfo(self, message, statusBar=None):
-        
+
         if self.devMode == 1:
             self.devInfo.append(message) #add the message to the developer widget if the devMode is activated
         if statusBar is not None:

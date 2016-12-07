@@ -1,0 +1,10 @@
+
+*.cfg
+
+.DS_Store
+
+*.pyc
+
+*.md
+
+*.png

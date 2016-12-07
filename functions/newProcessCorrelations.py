@@ -11,13 +11,8 @@ More details regarding the project on the GitHub Wiki : https://github.com/Chris
 Current File: This file manages the complete image processing operation
 """
 
-import numpy as np
-import cv2
-import filterWidget
-import CpCorr
-import time
-import os
-import initData
+import numpy as np, cv2, time, os
+from functions import DIC_Global, filterFunctions, CpCorr, initData
 
 def prepareCorrelations(fileNameList, gridX, gridY, corrsize, baseMode, floatStep, parentWidget, parentWindow, largeDisp, filterInfos, thread):
 
@@ -76,41 +71,59 @@ def prepareCorrelations(fileNameList, gridX, gridY, corrsize, baseMode, floatSte
     nbMarkersPerProcess = numOfBasePoints/PROCESSES
     if nbMarkersPerProcess < 2:
         nbMarkersPerProcess = 2
-        PROCESSES = numOfBasePoints/2
+        PROCESSES = int(numOfBasePoints/2)+1
     parentWindow.devWindow.addInfo('Number of processes used: '+str(PROCESSES))
     for i in range(0,PROCESSES):
-        start = i*nbMarkersPerProcess
+        start = int(i*nbMarkersPerProcess)
         if i >= PROCESSES-1: #last process do all the last images
             end = numOfBasePoints
         else:
-            end = (i+1)*nbMarkersPerProcess
+            end = int((i+1)*nbMarkersPerProcess)
         args.append((fileNameList, activeImages, parentWindow.filePath, gridX[start:end], gridY[start:end], baseMode, corrsize, floatStep, largeDisp, filterInfos))
 
-    result = parentWindow.createProcess(processCorrelation, args, PROCESSES, parentWidget.calculationBar, '(1/2) Processing images...')
+    result = DIC_Global.createProcess(parentWindow, processCorrelation, args, PROCESSES, parentWidget.calculationBar, '(1/2) Processing images...')
 
 
     parentWindow.devWindow.addInfo('Calculation finished. Saving data files.')
 
     #neighbors calculation
-    parentWidget.calculationBar.changeValue(1, '(2/2) Calculating neighborhood...')
-    activeMarkers = np.linspace(0, numOfBasePoints, num=numOfBasePoints, endpoint=False)
+    #parentWidget.calculationBar.changeValue(1, '(2/2) Calculating neighborhood...')
+    parentWidget.calculationBar.percent = 0
+    parentWidget.calculationBar.currentTitle = '(2/2) Calculating neighborhood...'
+    activeMarkers = np.linspace(0, numOfBasePoints, num=numOfBasePoints, endpoint=False).astype(np.int)
     minNeighbors = 16
     initData.calculateNeighbors(activeMarkers, result[0][:,activeImages[0]], result[1][:,activeImages[0]], minNeighbors, parentWindow.fileDataPath, progressBar=parentWidget.calculationBar)
 
-
     #data saving
-    parentWidget.calculationBar.changeValue(100, 'Saving .dat files...')
-    Save('validx.dat', result[0], parentWindow.fileDataPath)
-    Save('validy.dat', result[1], parentWindow.fileDataPath)
-    Save('stdx.dat', result[3], parentWindow.fileDataPath)
-    Save('stdy.dat', result[4], parentWindow.fileDataPath)
-    Save('corrcoef.dat', result[2], parentWindow.fileDataPath)
-    Save('dispx.dat', result[5], parentWindow.fileDataPath)
-    Save('dispy.dat', result[6], parentWindow.fileDataPath)
-    Save('filenamelist.dat', fileNameList, parentWindow.fileDataPath)
-    Save('infoMarkers.dat', result[7].astype(int), parentWindow.fileDataPath)
+    parentWidget.calculationBar.percent = 0
+    parentWidget.calculationBar.currentTitle = 'Saving validx.csv...'
+    Save('validx', result[0], parentWindow.fileDataPath)
+    parentWidget.calculationBar.percent = 10
+    parentWidget.calculationBar.currentTitle = 'Saving validy.csv...'
+    Save('validy', result[1], parentWindow.fileDataPath)
+    parentWidget.calculationBar.percent = 20
+    parentWidget.calculationBar.currentTitle = 'Saving stdx.csv...'
+    Save('stdx', result[3], parentWindow.fileDataPath)
+    parentWidget.calculationBar.percent = 30
+    parentWidget.calculationBar.currentTitle = 'Saving stdy.csv...'
+    Save('stdy', result[4], parentWindow.fileDataPath)
+    parentWidget.calculationBar.percent = 40
+    parentWidget.calculationBar.currentTitle = 'Saving corrcoef.csv...'
+    Save('corrcoef', result[2], parentWindow.fileDataPath)
+    parentWidget.calculationBar.percent = 50
+    parentWidget.calculationBar.currentTitle = 'Saving dispx.csv...'
+    Save('dispx', result[5], parentWindow.fileDataPath)
+    parentWidget.calculationBar.percent = 60
+    parentWidget.calculationBar.currentTitle = 'Saving dispy.csv...'
+    Save('dispy', result[6], parentWindow.fileDataPath)
+    parentWidget.calculationBar.percent = 70
+    parentWidget.calculationBar.currentTitle = 'Saving filenamelist.csv...'
+    Save('filenamelist', fileNameList, parentWindow.fileDataPath)
+    parentWidget.calculationBar.percent = 80
+    parentWidget.calculationBar.currentTitle = 'Saving infoMarkers.csv...'
+    Save('infoMarkers', result[7].astype(int), parentWindow.fileDataPath)
     if len(filterInfos) > 0:
-        filterWidget.saveOpenFilter(parentWindow.fileDataPath, filterList=filterInfos)
+        filterFunctions.saveOpenFilter(parentWindow.fileDataPath, filterList=filterInfos)
 
     parentWindow.devWindow.addInfo('Calculation done. Data files saved.')
     totalTime = time.time() - startTime
@@ -125,10 +138,14 @@ def prepareCorrelations(fileNameList, gridX, gridY, corrsize, baseMode, floatSte
     infosAnalysis.append(numOfImages*numOfBasePoints)
     infosAnalysis.append(isLargeDisp)
     infosAnalysis.append(str(parentWindow.profileData['User'][parentWindow.currentProfile]))
-    Save('infoAnalysis.dat', np.array(infosAnalysis), parentWindow.fileDataPath)
-    if isLargeDisp:
-        Save('largeDisp.dat', largeDisp, parentWindow.fileDataPath)
 
+    parentWidget.calculationBar.percent = 90
+    parentWidget.calculationBar.currentTitle = 'Saving infoAnalysis.csv...'
+    Save('infoAnalysis', np.array(infosAnalysis), parentWindow.fileDataPath)
+    if isLargeDisp:
+        parentWidget.calculationBar.percent = 95
+        parentWidget.calculationBar.currentTitle = 'Saving largeDisp.csv...'
+        Save('largeDisp', largeDisp, parentWindow.fileDataPath)
 
     parentWindow.devWindow.addInfo('Processing Time : '+str(totalTime))
     infosThread.emit([1])
@@ -172,7 +189,7 @@ def processCorrelation(fileNameList, activeImages, filePath, gridX, gridY, baseM
 
 
     #apply filter if loaded
-    base = filterWidget.applyFilterListToImage(filterInfos, base)
+    base = filterFunctions.applyFilterListToImage(filterInfos, base)
 
 
     ValidX[:,refImg]=basePointsX[:,0]
@@ -193,7 +210,7 @@ def processCorrelation(fileNameList, activeImages, filePath, gridX, gridY, baseM
         if activeImages[CurrentImage] == 1:
 
             inputImg = cv2.imread(filePath+'/'+fileNameList[CurrentImage], 0)
-            inputImg = filterWidget.applyFilterListToImage(filterInfos, inputImg)
+            inputImg = filterFunctions.applyFilterListToImage(filterInfos, inputImg)
             #inputImg = cv2.cvtColor(inputRaw, cv2.COLOR_BGR2GRAY)
 
             if baseMode == 2:
@@ -203,7 +220,7 @@ def processCorrelation(fileNameList, activeImages, filePath, gridX, gridY, baseM
                     while(activeImages[CurrentImage-floatStep-imageSelection] == 0):
                         imageSelection += 1
                     base = cv2.imread(filePath+'/'+fileNameList[CurrentImage-floatStep-imageSelection], 0)
-                    base = filterWidget.applyFilterListToImage(filterInfos, base)
+                    base = filterFunctions.applyFilterListToImage(filterInfos, base)
                     newX = ValidX[:,CurrentImage-floatStep-imageSelection]
                     newY = ValidY[:,CurrentImage-floatStep-imageSelection]
                     basePointsX = np.reshape(newX, (len(newX),1))
@@ -312,17 +329,16 @@ def CollectDataFunc(InputCorrX,InputCorrY,StdX,StdY,CorrCoef):
     stdYCurrent = StdY
     return validXCurrent, validYCurrent, stdXCurrent, stdYCurrent, corrCoefCurrent
 
-def Save(FileName, Data, filePath):
+def Save(FileName, Data, filePath, extension='csv'):
 
-    np.savetxt(filePath+'/'+FileName, Data, fmt="%s")
-
+    np.savetxt(filePath+'/'+FileName+'.'+extension, Data, fmt="%s", delimiter=',')
 
 def shiftDetection(filePath, imageList, activeImages, area, filterList, thread):
 
     largeDisp = np.zeros((len(imageList),2))
 
     initImage = cv2.imread(filePath+'/'+imageList[0].rstrip(), 0) #read the full image
-    initImage = filterWidget.applyFilterListToImage(filterList, initImage)
+    initImage = filterFunctions.applyFilterListToImage(filterList, initImage)
     nbImages = len(imageList)
     currentPercent = 1
 
@@ -340,7 +356,7 @@ def shiftDetection(filePath, imageList, activeImages, area, filterList, thread):
     for i in activeFileList:
 
         newImage = cv2.imread(filePath+'/'+imageList[i].rstrip(),0)
-        newImage = filterWidget.applyFilterListToImage(filterList, newImage)
+        newImage = filterFunctions.applyFilterListToImage(filterList, newImage)
 
         matchArea = cv2.matchTemplate(newImage, template, cv2.TM_CCORR_NORMED)
         minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(matchArea)

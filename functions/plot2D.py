@@ -11,57 +11,50 @@ More details regarding the project on the GitHub Wiki : https://github.com/Chris
 Current File: This file manages the initiation and update of 2D plots
 """
 
-import matplotlib.pyplot as plt
-import numpy as np
+import matplotlib.pyplot as plt, matplotlib.mlab as ml, matplotlib.colors as mplc, cv2, scipy, numpy as np
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-import matplotlib.mlab as ml
 from matplotlib.pyplot import clabel
-import matplotlib.colors as mplc
-import cv2
-import scipy
 from scipy.interpolate import griddata
-import masks
-import filterWidget
-
+from functions import masks
 
 ##############################
 ## DISPLACEMENT / DEVIATION ##
 ##############################
 
 def plot2D_displacementDeviation(self, plotAx, data_x, data_y, disp_x, disp_y, value, grid_instances, activeInstances):
-    
+
     plotAx.cla() #clear the figure
     plotAx.patch.set_facecolor('none') #remove figure background
-    
+
     plotAx.red = []
     for instance in activeInstances:
         instanceMarkers = grid_instances[instance]
         plotAx.red.append(plotAx.plot(data_x[instanceMarkers,0], data_y[instanceMarkers,0], '+', ms=3)[0])
-        
+
 def update2D_displacementDeviation(plotAx, xAxis, yAxis, image): #data = red_x, red_y, blue_x, blue_y, value, parentWidget
-        
-        
+
+
     nbInstances = len(np.atleast_1d(xAxis))
     if image is not None:
         plotAx.image = plotAx.imshow(image[::10,::10], cmap='gray', extent=[0, image.shape[1], image.shape[0],0]) # plot the image in low quality (reduce plotting time)
     for instance in range(nbInstances):
         plotAx.red[instance].set_data(xAxis[instance], yAxis[instance])
-        
-        
+
+
 #################
 ## CORRELATION ##
 #################
-        
+
 def plot2D_correlation(self, plotFig, plotAx, data_x, data_y, corr):
-    
+
     plotAx.cla() #clear the figure
     plotAx.patch.set_facecolor('none') #remove figure background
-    
+
     try:
         plotFig.delaxes(plotFig.axes[1])
     except:
         pass
-    
+
     #plotAx.mappable = plotAx.contourf(data_x, data_y, corr, np.linspace(0, 1, 9), cmap = 'Spectral', extend='min', spacing='proportional')
     plotAx.mappable = plotAx.imshow(corr, cmap = 'RdBu')
     plotAx.mappable.axes.xaxis.set_ticklabels([])
@@ -93,26 +86,26 @@ def update2D_correlation(self, plotFig, plotAx, data): #data = dataCorr2D
     plotAx.mappable = []
 
     for instance in range(nbInstances):
-        if data[instance][0,0] <> 99999:
+        if data[instance][0,0] != 99999:
             plotAx.mappable.append(plotAx.imshow(data[instance], cmap = 'RdBu', vmin=vmin, vmax=vmax))
-            
-        
+
+
 ##########################
 ## LOCAL STRAIN 1D / 2D ##
-##########################   
-        
+##########################
+
 def plot2D_strain(self, plotAx, data_x, data_y, disp_strain, grid_instances, activeInstances, activeMarkers, plotFig=None, refImg=0):
-    
+
     plotAx.cla() #clear the figure
     plotAx.patch.set_facecolor('none') #remove figure background
-                    
+
     if plotFig is not None: #2D Strain
-        
+
         try:
             plotFig.delaxes(plotFig.axes[1])
         except:
             pass
-        
+
         plotAx.mappable = plotAx.imshow(disp_strain, cmap = 'jet') #old_cmap : RdBu
         plotAx.mappable.axes.xaxis.set_ticklabels([])
         plotAx.mappable.axes.yaxis.set_ticklabels([])
@@ -124,7 +117,7 @@ def plot2D_strain(self, plotAx, data_x, data_y, disp_strain, grid_instances, act
         plotAx.set_aspect('auto')
 
     else: #1D Strain
-    
+
         nbInstances = len(np.atleast_1d(activeInstances))
         lowLimitData = np.max(data_x)
         highLimitData = np.min(data_x)
@@ -150,45 +143,45 @@ def plot2D_strain(self, plotAx, data_x, data_y, disp_strain, grid_instances, act
             highLimitData = max(highLimitData, np.max(data_x[instanceMarkers,:]))
         plotAx.set_xlim([lowLimitData, highLimitData])
         plotAx.set_ylim([lowLimitDisp, highLimitDisp])
-    
-    
+
+
 def update2D_strain(self, plotAx, xAxis, yAxis, data): #data = [slope, intersect] for 1D strain or data = plotFig for 2D strain
-    
+
     nbInstances = len(np.atleast_1d(xAxis))
     if yAxis is None: #2D Strain
-    
+
         try:
             for instance in range(nbInstances):
                 plotAx.mappable[instance].remove()
         except:
-            pass        
-        
+            pass
+
         vmin, vmax = plotAx.cbar.get_clim()
         plotAx.mappable = []
         for instance in range(nbInstances):
-            if xAxis[instance][0,0] <> 99999:
+            if xAxis[instance][0,0] != 99999:
                 plotAx.mappable.append(plotAx.imshow(xAxis[instance], cmap = 'jet', vmin=vmin, vmax=vmax))
         plotAx.set_aspect('auto')
 
     else: #1D Strain
-    
+
         for instance in range(nbInstances):
             if plotAx.strainFit[instance] is not None:
                 plotAx.strainFit[instance].set_data(xAxis[instance], data[0][instance] * xAxis[instance] + data[1][instance])
             plotAx.strainPlot[instance].set_data(xAxis[instance], yAxis[instance])
-        
-        
+
+
 def plot_TrueStrain(self, plotAx, data): #data = strainX/Y, averageImageNb, activeInstances
-    
+
     plotAx.cla()
     nbImages = len(np.atleast_1d(data[0]))
     nbInstances = len(np.atleast_1d(data[0][0,:]))
-    
+
     if data[1] < 1:
         data[1] = 1
     if data[1] > nbImages:
         data[1] = nbImages
-        
+
     for instance in range(nbInstances):
         slope = []
         currentCumulatedStrain = 0
@@ -204,7 +197,3 @@ def plot_TrueStrain(self, plotAx, data): #data = strainX/Y, averageImageNb, acti
         plotAx.plot(slope[:,0], slope[:,1], '.-', label=lbl)
     if nbInstances > 1:
         plotAx.legend()
-
-
-
-    

@@ -11,26 +11,24 @@ More details regarding the project on the GitHub Wiki : https://github.com/Chris
 Current File: This file manages the control tools in the analysis results
 """
 
-from PySide.QtGui import *
-from PySide.QtCore import *
-import os
-import numpy as np
-import masks
-
+from PyQt4.QtGui import *
+from PyQt4.QtCore import *
+import os, numpy as np
+from functions import masks
 
 class controlWidget(QWidget):
-    
+
     def __init__(self, parent):
-        
+
         super(controlWidget, self).__init__()
-        
+
         self.parent = parent
-        
+
         layout = QVBoxLayout()
         layout.setContentsMargins(10,10,10,10)
         layout.setSpacing(0)
         self.setMinimumWidth(300)
-        
+
         # Analysis Infos
         analysisFrame = QFrame()
         analysisFrame.setFrameShape(QFrame.StyledPanel)
@@ -38,7 +36,7 @@ class controlWidget(QWidget):
         analysisLayout = QVBoxLayout()
         analysisLayout.setContentsMargins(0,0,0,0)
         analysisLayout.setAlignment(Qt.AlignCenter)
-        
+
         analysisTitleLayout = QHBoxLayout()
         analysisTitleLayout.setContentsMargins(0,0,0,0)
         analysisTitle = QLabel('Name:')
@@ -49,7 +47,7 @@ class controlWidget(QWidget):
         analysisName.setAlignment(Qt.AlignCenter)
         analysisTitleLayout.addWidget(analysisTitle)
         analysisTitleLayout.addWidget(analysisName)
-        
+
         imagesLayout = QHBoxLayout()
         imagesLayout.setContentsMargins(0,0,0,0)
         imagesLbl = QLabel('Active images:')
@@ -62,7 +60,7 @@ class controlWidget(QWidget):
         imagesLayout.addWidget(imagesLbl)
         imagesLayout.addWidget(self.totalActive)
         imagesLayout.addWidget(totalImages)
-        
+
         markersLayout = QHBoxLayout()
         markersLayout.setContentsMargins(0,0,0,0)
         markersLbl = QLabel('Active markers:')
@@ -75,7 +73,7 @@ class controlWidget(QWidget):
         markersLayout.addWidget(markersLbl)
         markersLayout.addWidget(self.nonMaskedMarkers)
         markersLayout.addWidget(totalMarkers)
-        
+
         versionLayout = QHBoxLayout()
         versionLayout.setContentsMargins(0,0,0,0)
         versionLbl = QLabel('Version:')
@@ -90,17 +88,17 @@ class controlWidget(QWidget):
         self.currentVersion.mousePressEvent = lambda x: masks.renameMask(self.parent.parentWindow, self.currentVersionName)
         versionLayout.addWidget(versionLbl)
         versionLayout.addWidget(self.currentVersion)
-        
+
         analysisLayout.addLayout(analysisTitleLayout)
         analysisLayout.addLayout(imagesLayout)
         analysisLayout.addLayout(markersLayout)
         analysisLayout.addLayout(versionLayout)
         analysisFrame.setLayout(analysisLayout)
-        
-        
+
+
         # Current Image Infos
         currentLayout = QHBoxLayout()
-        
+
         imageInfoFrame = QWidget()
         imageInfoFrame.setMaximumWidth(300)
         imageInfoLayout = QVBoxLayout()
@@ -132,25 +130,37 @@ class controlWidget(QWidget):
         imageInfoLayout.addWidget(self.strainValue)
         imageInfoLayout.addStretch(1)
         imageInfoFrame.setLayout(imageInfoLayout)
-        
+
         self.imageSelector = QDial()
         self.imageSelector.setContentsMargins(0,0,0,0)
-                
+        self.imageSelector.valueChanged.connect(lambda: self.updateSlider(self.imageSelector))
+
         currentLayout.addWidget(imageInfoFrame)
         currentLayout.addWidget(self.imageSelector)
-        
+
         self.sliderSelector = QSlider(Qt.Horizontal)
-        
+        self.sliderSelector.valueChanged.connect(lambda: self.updateSlider(self.sliderSelector))
+
         layout.addStretch(1)
         layout.addWidget(analysisFrame)
         layout.addLayout(currentLayout)
         layout.addWidget(self.sliderSelector)
-        
+
         self.setLayout(layout)
-        
-        
+
+    def updateSlider(self, slider):
+
+        imageValue = slider.value()
+        if slider == self.imageSelector:
+            if self.sliderSelector.value != imageValue:
+                self.sliderSelector.setValue(imageValue)
+        else:
+            if self.imageSelector.value != imageValue:
+                self.imageSelector.setValue(imageValue)
+        self.parent.resultAnalysis.graphRefresh(imageValue)
+
     def updateAnalysisInfos(self):
-        
+
         nbActiveImages = len(self.parent.activeImages)
         self.imageSelector.setRange(0, nbActiveImages - 1)
         self.sliderSelector.setRange(0, nbActiveImages - 1)
@@ -158,11 +168,11 @@ class controlWidget(QWidget):
         self.nonMaskedMarkers.setText(str(int(np.sum(self.parent.currentMask))))
         self.imageSelector.setValue(0)
         self.sliderSelector.setValue(0)
-        
-            
+
+
     def updateImageInfos(self, image):
-        
-        
+
+
         currentImage = self.parent.activeImages[image]
         self.imageName.setText('<b>'+str(self.parent.fileNameList[currentImage])+'</b>')
         self.imageNumber.setText(str(image+1))
@@ -171,8 +181,7 @@ class controlWidget(QWidget):
             nbMarkersInImage += len(np.atleast_1d(self.parent.grid_instances[instance]))
         self.markersInImage.setText(str(nbMarkersInImage))
         self.strainValue.setText('-')
-        
-    def resizeEvent(self, event=0):
-        
-        self.resize(self.minimumSizeHint())
 
+    def resizeEvent(self, event=0):
+
+        self.resize(self.minimumSizeHint())
