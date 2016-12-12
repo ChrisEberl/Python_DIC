@@ -44,22 +44,34 @@ class deleteMarkersDialog(QDialog):
         self.disp_y = parent.disp_y
         self.graphDisplay = 99 #temporary toolbar fix
 
-        dialogLabel = QLabel('Select markers you want to mask.<br>A first click initiate the selection, a second click confirms the selection. (Type C to cancel)')
+        dialogLabel = QLabel('Select markers you want to mask.<br>A first click initiate the selection, a second click confirms the selection.')
         dialogLabel.setAlignment(Qt.AlignHCenter)
         dialogLabel.setMinimumHeight(30)
 
         checkBoxOptions = QHBoxLayout()
-        checkBoxOptions.setAlignment(Qt.AlignHCenter)
         checkBoxOptions.setSpacing(10)
         self.baseMarkers = QCheckBox('Base Grid Markers')
         self.baseMarkers.setChecked(True)
         self.dispMarkers = QCheckBox('Displacement Arrows')
+        #ComboBox to select instance
+        instanceSelectLbl = QLabel('Display Instance(s):')
+        self.instanceSelect = QComboBox(self)
+        self.instanceSelect.addItem('All')
+        for instance in self.activeInstances:
+            self.instanceSelect.addItem(str(instance))
+        checkBoxOptions.addStretch(1)
         checkBoxOptions.addWidget(self.baseMarkers)
         checkBoxOptions.addWidget(self.dispMarkers)
+        checkBoxOptions.addStretch(1)
+        checkBoxOptions.addWidget(instanceSelectLbl)
+        checkBoxOptions.addWidget(self.instanceSelect)
+        checkBoxOptions.addStretch(1)
 
         #checkBox clicked
         self.baseMarkers.stateChanged.connect(lambda: self.selectMarkers())
         self.dispMarkers.stateChanged.connect(lambda: self.selectMarkers())
+        #comboBox index changed
+        self.instanceSelect.currentIndexChanged.connect(lambda: self.selectMarkers())
 
         self.plotArea = DIC_Global.matplotlibWidget(self, parent=self, toolbar=1) #toolbar != None for horizontal toolbar
         self.plotArea.setMinimumHeight(self.plotArea.canvas.height())
@@ -95,11 +107,12 @@ class deleteMarkersDialog(QDialog):
         self.unselectedMarkersPlot = []
         self.selectedMarkersPlot = []
         self.arrowsPlot = []
-        self.selectMarkers(firstStart=1)
+        self.selectMarkers()
 
-    def selectMarkers(self, firstStart=0):
+    def selectMarkers(self):
 
         self.firstClic = 0
+        self.plotArea.matPlot.cla()
         self.plotArea.canvas.mpl_connect('button_release_event', self.on_release)
         self.plotArea.canvas.mpl_connect('key_press_event', self.on_key)
 
@@ -113,8 +126,8 @@ class deleteMarkersDialog(QDialog):
         disp_y_init = self.disp_y[:, self.activeImages[value]]
         markerSelection = self.currentMask[:, value]
 
-        nbInstances = len(np.atleast_1d(self.activeInstances))
-        for instance in range(nbInstances):
+        validInstances = self.returnValidInstances()
+        for instance in validInstances:
             #instanceMarkers = [marker for marker in self.gridInstances[self.activeInstances[instance]] if marker in self.activeMarkers[value]]
             instanceMarkers = np.intersect1d(self.gridInstances[self.activeInstances[instance]], self.activeMarkers[value], assume_unique=True)
             selectedMarkers = [marker for marker in instanceMarkers if markerSelection[marker] == 0]
@@ -137,37 +150,24 @@ class deleteMarkersDialog(QDialog):
             if self.dispMarkers.isChecked():
                 nb = 0
                 nbUnselected = len(np.atleast_1d(unSelectedMarkers))
-                if len(np.atleast_1d(self.arrowsPlot)) < instance+1:
-                    self.arrowsPlot.append([])
-                for marker in unSelectedMarkers:
-                    try:
-                        self.arrowsPlot[instance][nb].remove()
-                        self.arrowsPlot[instance][nb] = self.plotArea.matPlot.arrow(data_x_init[marker], data_y_init[marker], disp_x_init[marker], disp_y_init[marker], head_width=3, head_length=7, color='blue')
-                    except:
-                        if len(np.atleast_1d(self.arrowsPlot[instance])) < nbUnselected:
-                            self.arrowsPlot[instance].append(self.plotArea.matPlot.arrow(data_x_init[marker], data_y_init[marker], disp_x_init[marker], disp_y_init[marker], head_width=3, head_length=7, color='blue'))
-                        else:
-                            self.arrowsPlot[instance][nb] = self.plotArea.matPlot.arrow(data_x_init[marker], data_y_init[marker], disp_x_init[marker], disp_y_init[marker], head_width=3, head_length=7, color='blue')
-                    nb+=1
-            else:
                 try:
-                    for element in self.arrowsPlot[instance]:
-                        element.remove()
+                    self.selectedMarkersPlot[instance] = self.plotArea.matPlot.quiver(data_x_init[unSelectedMarkers], data_y_init[unSelectedMarkers], disp_x_init[unSelectedMarkers], disp_y_init[unSelectedMarkers], units = 'xy', color='blue')
                 except:
-                    pass
-
-                try:
-                    self.unselectedMarkersPlot[instance] = self.plotArea.matPlot.plot(data_x_init[selectedMarkers], data_y_init[selectedMarkers], 'o', ms=5, color='red')[0]
-                except:
-                    self.unselectedMarkersPlot.append(self.plotArea.matPlot.plot(data_x_init[selectedMarkers], data_y_init[selectedMarkers], 'o', ms=5, color='red')[0])
-
+                    self.selectedMarkersPlot.append(self.plotArea.matPlot.quiver(data_x_init[unSelectedMarkers], data_y_init[unSelectedMarkers], disp_x_init[unSelectedMarkers], disp_y_init[unSelectedMarkers], units = 'xy', color='blue'))
 
         self.imagePlot = self.plotArea.matPlot.imshow(readImage, cmap='gray')
         self.plotArea.canvas.draw_idle()
 
-        if firstStart == 1:
-            self.plotArea.matPlot.cla()
-            self.selectMarkers()
+    def returnValidInstances(self):
+
+        nbInstances = len(np.atleast_1d(self.activeInstances))
+        validInstances = []
+        if self.instanceSelect.currentText() == "All":
+            for instance in range(nbInstances):
+                validInstances.append(instance)
+        else:
+            validInstances.append(self.instanceSelect.currentIndex()-1)
+        return validInstances
 
     def on_motion(self,event): #allow a live drawing of the rectangle area
 
@@ -212,16 +212,14 @@ class deleteMarkersDialog(QDialog):
                 if y1 is None:
                     y1 = self.y2
                 self.selectRectangleMarkers(self.x0, self.y0, x1 - self.x0, y1 - self.y0)
-                self.rect.remove()
 
     def on_key(self, event):
-        #print('you pressed', event.key, event.xdata, event.ydata)
+        print('you pressed', event.key, event.xdata, event.ydata)
         isValidEvent = False
         if event.key == 'd':
             value = self.activeImages[self.imageSelectSpinBox.value()-1]
             markerSelection = self.currentMask[:, value]
 
-            nbInstances = len(np.atleast_1d(self.activeInstances))
             for instance in range(nbInstances):
                 #instanceMarkers = [marker for marker in self.gridInstances[self.activeInstances[instance]] if marker in self.activeMarkers[value]]
                 instanceMarkers = np.intersect1d(self.gridInstances[self.activeInstances[instance]], self.activeMarkers[value], assume_unique=True)
@@ -250,7 +248,8 @@ class deleteMarkersDialog(QDialog):
         data_y_current = self.data_y[:, value]
 
         nbInstances = len(np.atleast_1d(self.activeInstances))
-        for instance in range(nbInstances):
+        validInstances = self.returnValidInstances()
+        for instance in validInstances:
             #instanceMarkers = [marker for marker in self.gridInstances[self.activeInstances[instance]] if marker in self.activeMarkers[value]]
             instanceMarkers = np.intersect1d(self.gridInstances[self.activeInstances[instance]], self.activeMarkers[value], assume_unique=True)
             for i in instanceMarkers:

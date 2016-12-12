@@ -97,12 +97,17 @@ class RelativeNDialog(QDialog):
         self.firstNodeLbl = QLabel('First Nodes Target')
 
         self.firstNodeLayout = QHBoxLayout()
+        self.image_FirstLbl = QLabel('Img.')
+        self.image_First = QLineEdit()
+        self.image_First.setMaximumWidth(30)
         self.minValue_FirstLbl = QLabel('Min.')
         self.minValue_First = QLineEdit()
         self.minValue_First.setMaximumWidth(60)
         self.maxValue_FirstLbl = QLabel('Max.')
         self.maxValue_First = QLineEdit()
         self.maxValue_First.setMaximumWidth(60)
+        self.firstNodeLayout.addWidget(self.image_FirstLbl)
+        self.firstNodeLayout.addWidget(self.image_First)
         self.firstNodeLayout.addWidget(self.minValue_FirstLbl)
         self.firstNodeLayout.addWidget(self.minValue_First)
         self.firstNodeLayout.addWidget(self.maxValue_FirstLbl)
@@ -111,17 +116,24 @@ class RelativeNDialog(QDialog):
         self.lastNodeLbl = QLabel('Last Nodes Target')
 
         self.lastNodeLayout = QHBoxLayout()
+        self.image_LastLbl = QLabel('Img.')
+        self.image_Last = QLineEdit()
+        self.image_Last.setMaximumWidth(30)
         self.minValue_LastLbl = QLabel('Min.')
         self.minValue_Last = QLineEdit()
         self.minValue_Last.setMaximumWidth(60)
         self.maxValue_LastLbl = QLabel('Max.')
         self.maxValue_Last = QLineEdit()
         self.maxValue_Last.setMaximumWidth(60)
+        self.lastNodeLayout.addWidget(self.image_LastLbl)
+        self.lastNodeLayout.addWidget(self.image_Last)
         self.lastNodeLayout.addWidget(self.minValue_LastLbl)
         self.lastNodeLayout.addWidget(self.minValue_Last)
         self.lastNodeLayout.addWidget(self.maxValue_LastLbl)
         self.lastNodeLayout.addWidget(self.maxValue_Last)
 
+        self.image_First.textEdited.connect(self.coordinatesChanged)
+        self.image_Last.textEdited.connect(self.coordinatesChanged)
         self.minValue_First.textEdited.connect(self.coordinatesChanged)
         self.maxValue_First.textEdited.connect(self.coordinatesChanged)
         self.minValue_Last.textEdited.connect(self.coordinatesChanged)
@@ -176,6 +188,8 @@ class RelativeNDialog(QDialog):
 
             self.plotArea.matPlot.set_xlim([x_min, x_max])
 
+            self.image_First.setText(str(self.nodeOnImage[0]))
+            self.image_Last.setText(str(self.nodeOnImage[1]))
             self.minValue_First.setText(str(self.bottomLimit[0]))
             self.maxValue_First.setText(str(self.topLimit[0]))
             self.minValue_Last.setText(str(self.bottomLimit[1]))
@@ -188,7 +202,7 @@ class RelativeNDialog(QDialog):
         activeImages = self.parent.activeImages
         refImg = activeImages[0]
         nbActiveImages = len(np.atleast_1d(activeImages))
-        nbMarkers = len(np.atleast_1d(self.activeMarkers[refImg]))
+        nbMarkers = 0
         [x_min, x_max] = [0,nbActiveImages-1]
         validPlot = 0
         colorsX = ['green', 'lightgreen', 'limegreen', 'seagreen']
@@ -202,6 +216,7 @@ class RelativeNDialog(QDialog):
         for instance in range(nbInstances):
             instanceMarkers = np.intersect1d(gridInstances[activeInstances[instance]], self.activeMarkers[refImg], assume_unique=True).astype(np.int)
             nbInstancesMarkers = len(np.atleast_1d(instanceMarkers))
+            nbMarkers += nbInstancesMarkers
             markerList = np.linspace(0, nbInstancesMarkers, num=nbInstancesMarkers, endpoint=False).astype(np.int)
             if self.displayXMarkers.isChecked():
                 clr = colorsX[instance % 4]
@@ -305,13 +320,19 @@ class RelativeNDialog(QDialog):
                 self.deleteButton.setEnabled(True)
                 self.plotRelativeN()
             else: #running
-                display = 'Iteration : '+str(data[4])+'/'+str(data[1])+' | '+str(data[3])+' markers. | Iteration Time : '+str(data[2])
+                display = 'Iteration : '+str(data[4])+'/'+str(data[1])+' | Iteration Time : '+str(data[2])
                 self.progressBarDialog.percent = int(matrixOrInt)
                 self.progressBarDialog.currentTitle = display
 
     def coordinatesChanged(self):
 
         toAvoid = ['', '-']
+
+        if self.image_First.text() not in toAvoid:
+            self.nodeOnImage[0] = np.absolute(int(self.image_First.text()))
+
+        if self.image_Last.text() not in toAvoid:
+            self.nodeOnImage[1] = np.absolute(int(self.image_Last.text()))
 
         if self.minValue_First.text() not in toAvoid:
             self.bottomLimit[0] = -np.absolute(float(self.minValue_First.text()))
@@ -380,6 +401,8 @@ class RelativeNDialog(QDialog):
         self.bottomLimitLine[0].set_data(self.nodeOnImage, self.bottomLimit)
         self.topLimitLine[0].set_data(self.nodeOnImage, self.topLimit)
 
+        self.image_First.setText(str(self.nodeOnImage[0]))
+        self.image_Last.setText(str(self.nodeOnImage[1]))
         self.minValue_First.setText(str(self.bottomLimit[0]))
         self.maxValue_First.setText(str(self.topLimit[0]))
         self.minValue_Last.setText(str(self.bottomLimit[1]))

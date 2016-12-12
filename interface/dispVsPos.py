@@ -44,41 +44,51 @@ class dispVsPosDialog(QDialog):
         checkBoxOptions = QHBoxLayout()
         checkBoxOptions.setAlignment(Qt.AlignHCenter)
         checkBoxOptions.setSpacing(10)
-
+        #layout items
         self.displayXMarkers = QCheckBox('Displacement along X')
         self.displayXMarkers.setChecked(True)
-
         self.displayYMarkers = QCheckBox('Displacement along Y')
-
-        self.imageSelectSpinBox = QSpinBox(self)
-        self.imageSelectSpinBox.setRange(1, len(np.atleast_1d(self.activeImages)))
-        self.imageSelectSpinBox.setValue(currentImage)
-
-        self.allImagesCheckBox = QCheckBox('Apply on all images.')
-        self.allImagesCheckBox.setChecked(True)
-
+        #ComboBox to select instance
+        instanceSelectLbl = QLabel('Display Instance(s):')
+        self.instanceSelect = QComboBox(self)
+        self.instanceSelect.addItem('All')
+        for instance in self.activeInstances:
+            self.instanceSelect.addItem(str(instance))
+        #add items to layout
+        checkBoxOptions.addStretch(1)
         checkBoxOptions.addWidget(self.displayXMarkers)
         checkBoxOptions.addWidget(self.displayYMarkers)
-        checkBoxOptions.addWidget(self.imageSelectSpinBox)
-        checkBoxOptions.addWidget(self.allImagesCheckBox)
+        checkBoxOptions.addStretch(1)
+        checkBoxOptions.addWidget(instanceSelectLbl)
+        checkBoxOptions.addWidget(self.instanceSelect)
+        checkBoxOptions.addStretch(1)
 
         #checkBox clicked
         self.displayXMarkers.stateChanged.connect(self.plotDispersion)
         self.displayYMarkers.stateChanged.connect(self.plotDispersion)
-        self.imageSelectSpinBox.valueChanged.connect(self.plotDispersion)
+        #comboBox index changed
+        self.instanceSelect.currentIndexChanged.connect(self.plotDispersion)
 
         self.plotArea = DIC_Global.matplotlibWidget()
         self.plotArea.setFocusPolicy(Qt.ClickFocus)
         self.plotArea.setFocus()
 
         buttonBox = QHBoxLayout()
-
         self.deleteButton = QPushButton('Delete Selection')
         self.deleteButton.setMinimumWidth(120)
-        self.deleteButton.clicked.connect(self.maskSelection)
+        self.imageSelectSpinBox = QSpinBox(self)
+        self.imageSelectSpinBox.setRange(1, len(np.atleast_1d(self.activeImages)))
+        self.imageSelectSpinBox.setValue(currentImage)
+        self.allImagesCheckBox = QCheckBox('Apply on all images.')
+        self.allImagesCheckBox.setChecked(True)
         buttonBox.addStretch(1)
         buttonBox.addWidget(self.deleteButton)
+        buttonBox.addWidget(self.imageSelectSpinBox)
+        buttonBox.addWidget(self.allImagesCheckBox)
         buttonBox.addStretch(1)
+        #actions
+        self.deleteButton.clicked.connect(self.maskSelection)
+        self.imageSelectSpinBox.valueChanged.connect(self.plotDispersion)
 
         #Dialog Window Layout
         dialogLayout.addWidget(dialogLabel)
@@ -112,8 +122,8 @@ class dispVsPosDialog(QDialog):
         minLimit = -0.0001
         maxLimit = 0.0001
 
-        nbInstances = len(np.atleast_1d(self.activeInstances))
-        for instance in range(nbInstances):
+        validInstances = self.returnValidInstances()
+        for instance in validInstances:
 
             #instanceMarkers = [marker for marker in self.gridInstances[self.activeInstances[instance]] if marker in self.activeMarkers[value]]
             instanceMarkers = np.intersect1d(self.gridInstances[self.activeInstances[instance]],self.activeMarkers[value], assume_unique=True).astype(np.int)
@@ -164,6 +174,18 @@ class dispVsPosDialog(QDialog):
 
         self.plotArea.draw_idle() #refresh the area
 
+    def returnValidInstances(self):
+
+        nbInstances = len(np.atleast_1d(self.activeInstances))
+        validInstances = []
+        instanceSelectTxt = self.instanceSelect.currentText()
+        if self.instanceSelect.currentText() == "All":
+            for instance in range(nbInstances):
+                validInstances.append(instance)
+        else:
+            validInstances.append(self.instanceSelect.currentIndex()-1)
+        return validInstances
+
     def selectRectangleMarkers(self, x0, y0, width, height): #when a rectangle is drawn, select all the markers inside
 
         value = self.activeImages[self.imageSelectSpinBox.value()-1]
@@ -175,8 +197,8 @@ class dispVsPosDialog(QDialog):
         disp_x_current = self.disp_x[:, value]
         disp_y_current = self.disp_y[:, value]
 
-        nbInstances = len(np.atleast_1d(self.activeInstances))
-        for instance in range(nbInstances):
+        validInstances = self.returnValidInstances()
+        for instance in validInstances:
             #instanceMarkers = [marker for marker in self.gridInstances[self.activeInstances[instance]] if marker in self.activeMarkers[value]]
             instanceMarkers = np.intersect1d(self.gridInstances[self.activeInstances[instance]],self.activeMarkers[value], assume_unique=True).astype(np.int)
 
@@ -264,8 +286,8 @@ class dispVsPosDialog(QDialog):
             value = self.activeImages[self.imageSelectSpinBox.value()-1]
             markerSelection = self.currentMask[:, value]
 
-            nbInstances = len(np.atleast_1d(self.activeInstances))
-            for instance in range(nbInstances):
+            validInstances = self.returnValidInstances()
+            for instance in validInstances:
                 #instanceMarkers = [marker for marker in self.gridInstances[self.activeInstances[instance]] if marker in self.activeMarkers[value]]
                 instanceMarkers = np.intersect1d(self.gridInstances[self.activeInstances[instance]],self.activeMarkers[value], assume_unique=True).astype(np.int)
                 for i in instanceMarkers:
